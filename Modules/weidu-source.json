@@ -1,0 +1,150 @@
+{
+  "source": "../weidu-ios",
+  "commit": "3f3d4fa4af3f364dca45f52e5be276a09dc82c87",
+  "files": [
+    {
+      "path": "Data/Database.swift",
+      "sha256": "d7f86e31e4b31956703ec8ce2115f6d467cdd897505b7242b88b331700a02c67"
+    },
+    {
+      "path": "Data/Store.swift",
+      "sha256": "a5449cb35204e9d5454ff62e6cbea67fc9028cf5049775bc153d0885e1bef268"
+    },
+    {
+      "path": "Models/AppSettings.swift",
+      "sha256": "14e387ffcbf8dac295108b0678a425667c129fec1597223638f72616b8b72358"
+    },
+    {
+      "path": "Models/Models.swift",
+      "sha256": "926e4f35d47cb793f2831923eac7c3e50097a69e415def1c4f9acffb5535aba1"
+    },
+    {
+      "path": "Services/FeedParser.swift",
+      "sha256": "bd36be1a3442a94092af39cf1a431ebd2c024d56d348be310b8517a438ee3675"
+    },
+    {
+      "path": "Services/FeedService.swift",
+      "sha256": "a4a6ca6943adb1b937f72146a62355e1b9eb115741dbc7b019511943df03d421"
+    },
+    {
+      "path": "Services/FulltextExtractor.swift",
+      "sha256": "ae200ca1f61cdfa64c0a5b94f2652128011a631ecaf91645e15a6c982228ce46"
+    },
+    {
+      "path": "Services/ImageCache.swift",
+      "sha256": "f6afc955f5098eb848a23aa8db0b75270e126de5d373763f19a6584c91e4ce04"
+    },
+    {
+      "path": "Services/ImageProxy.swift",
+      "sha256": "daf514e32c082df285e386c662d92a85076731353fa3fda372c637f67359ab41"
+    },
+    {
+      "path": "Services/OPML.swift",
+      "sha256": "43d226b5e5e929729088f3e0d25b2690a620afcb02759bb3c8aff8f7baec397e"
+    },
+    {
+      "path": "Services/ReaderHTML.swift",
+      "sha256": "9091cc112308bb1ee55995acab95f76feef54c136972df884a286edaf258a452"
+    },
+    {
+      "path": "Services/ReaderMedia.swift",
+      "sha256": "28e163fde31105daeb062ce92109c1c8f90f6414852cb87bc5e75077045f97fd"
+    },
+    {
+      "path": "Support/BuildProbe.swift",
+      "sha256": "2acecec062677458ef9fcfd9aa2fb6fbeef16d0ef7baa6bd3f63a71f1c268147"
+    },
+    {
+      "path": "Support/CachePolicy.swift",
+      "sha256": "48009c583a63cea913db1e67365446f1343e70369cf2d8b339892e081596023b"
+    },
+    {
+      "path": "Support/DesignPreviewData.swift",
+      "sha256": "af92f9fd35c9e9b38ce04c099f70834b1bdcb1ed6f0f79330cf57d018d7f8960"
+    },
+    {
+      "path": "Support/Format.swift",
+      "sha256": "119ead96d1103c45caba483470177dde67b194b35a6901d0d957dbf76e40816b"
+    },
+    {
+      "path": "Support/ListAutoReadPolicy.swift",
+      "sha256": "227bcf60357a0a90eec8be782efff6fe3df6e2d8e6ffa0b2c06bee6ddfeb5024"
+    },
+    {
+      "path": "Support/ListBottomSweepPolicy.swift",
+      "sha256": "c057426c62ffdf95e69ec675accc3320da5df9415899916d611e264709ec9eef"
+    },
+    {
+      "path": "Support/ListHeaderScrollPolicy.swift",
+      "sha256": "626bd9f7b393a92e41292dcd23df5c99ad7937056ff16978eeab74ad464e6de4"
+    },
+    {
+      "path": "Support/ReaderPullPolicy.swift",
+      "sha256": "a8e77a863e2f0d4a6642c55965ebd719e2385e4be871acf9e68d27831b3dc3a2"
+    },
+    {
+      "path": "Support/Theme.swift",
+      "sha256": "c3143bed261fdd59cd63800f33de13d7ae3d43f0aa3762f9de8fcb5a374e3f41"
+    },
+    {
+      "path": "Views/AddFeedView.swift",
+      "sha256": "bc7571c58137a00b447f9c869cc7e3c403a2fb9563e6fc79548f9ce532d35893"
+    },
+    {
+      "path": "Views/ArticleImageViewer.swift",
+      "sha256": "e9edbd61a1df2dccd233a6627d48209a7bb87f4c9ddfc4a7a75475c9576c3fb6"
+    },
+    {
+      "path": "Views/ArticleListScreen.swift",
+      "sha256": "ff6771ef525a1de0b9b9900b7d8a4f7e6ac10e28b61afd62b4966f07901eb9eb"
+    },
+    {
+      "path": "Views/ArticleVideoPlayer.swift",
+      "sha256": "58ddcc933d7dbf35f30efe513e0c71c4d792971eca27a4bfa92ff1900a54fe99"
+    },
+    {
+      "path": "Views/CachedArticleImage.swift",
+      "sha256": "4f7c5747c59c7e5be828ba6ff4bcc6c8cf66ecbd6701bee87d6895d1c1982bdc"
+    },
+    {
+      "path": "Views/Components.swift",
+      "sha256": "238fb9b68f3abd8a877a62c9b79e493f0a1bf06c8ba1c99468a1e654dfc8f198"
+    },
+    {
+      "path": "Views/DesignComponents.swift",
+      "sha256": "6a5cc888d258345715e63adb1e95a80d85cfa5a4f73e4406b3ed62fb922c4d3e"
+    },
+    {
+      "path": "Views/FeedReadingSettings.swift",
+      "sha256": "e851db0d75c50813a2370f52b2fcf75fc0efe91b265ed7e245cb64a984c72db9"
+    },
+    {
+      "path": "Views/FeedsView.swift",
+      "sha256": "5ace6a42b594e7edd9004707822aad38a6e112ac7357821d1b7715f034bc3d5a"
+    },
+    {
+      "path": "Views/InAppBrowserView.swift",
+      "sha256": "5f436079a7b260d1f5e4a2d78e593266750d7c026c20fa774308ad9b78009e8d"
+    },
+    {
+      "path": "Views/ReaderView.swift",
+      "sha256": "4361962cefffafe02982de5918bdb4516d17a7825e7537b191f992eaf3a6a756"
+    },
+    {
+      "path": "Views/ReaderWebView.swift",
+      "sha256": "a978640224af7c2ae59bd12c933fd69e26dee9083235c6a4d501a5c417123076"
+    },
+    {
+      "path": "Views/ReadingAppearanceSheet.swift",
+      "sha256": "e353c2b0b25eea74ad037092e41257cc4a294c7af218d901ecff3298263faeb9"
+    },
+    {
+      "path": "Views/RootView.swift",
+      "sha256": "f48566f0311f14ccc0669e96a9b7fd543362a0fe0aa52f2fc7a33b056b067169"
+    },
+    {
+      "path": "Views/SettingsView.swift",
+      "sha256": "1a6ccdd686be1ef748d69afcd6d37ea5ceac26b38b86b6c330c8bd99ee5bbeed"
+    }
+  ]
+}

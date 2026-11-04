@@ -1,0 +1,118 @@
+name: ClipStudio
+options:
+  bundleIdPrefix: com.example.workbench
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.3.6"
+    CURRENT_PROJECT_VERSION: "10"
+packages:
+  SwiftSoup:
+    url: https://github.com/scinfu/SwiftSoup.git
+    from: 2.7.0
+
+targets:
+  WeiduKit:
+    type: framework
+    platform: iOS
+    sources: Modules/WeiduKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.workbench.reader
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - sdk: libsqlite3.tbd
+      - package: SwiftSoup
+        product: SwiftSoup
+  ClipStudio:
+    type: application
+    platform: iOS
+    sources:
+      - path: ClipStudio
+        excludes: [Info.plist, Resources]
+      - path: ClipStudio/Resources
+        buildPhase: resources
+    info:
+      path: ClipStudio/Info.plist
+      properties:
+        CFBundleDisplayName: 工作台
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        # Keep the original reader's HTTP feed support. Account APIs independently enforce HTTPS and same origin.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        CFBundleURLTypes:
+          - CFBundleURLName: com.example.workbench
+            CFBundleURLSchemes: [workbench]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.workbench
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SUPPORTS_MACCATALYST: NO
+    dependencies:
+      - target: WeiduKit
+        embed: true
+  ClipStudioTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: Tests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/ClipStudio.app/ClipStudio"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+    dependencies:
+      - target: ClipStudio
+  WeiduKitTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: Modules/WeiduKitTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/ClipStudio.app/ClipStudio"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+    dependencies:
+      - target: ClipStudio
+      - target: WeiduKit
+  ClipStudioUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: UITests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: ClipStudio
+schemes:
+  ClipStudio:
+    build:
+      targets:
+        ClipStudio: all
+        ClipStudioTests: [test]
+        WeiduKitTests: [test]
+    test:
+      targets: [ClipStudioTests, WeiduKitTests]
+  InterfaceChecks:
+    build:
+      targets:
+        ClipStudio: all
+        ClipStudioUITests: [test]
+    test:
+      targets: [ClipStudioUITests]
+  AcceptanceChecks:
+    build:
+      targets:
+        ClipStudio: all
+        ClipStudioTests: [test]
+        WeiduKitTests: [test]
+        ClipStudioUITests: [test]
+    test:
+      targets: [ClipStudioTests, WeiduKitTests, ClipStudioUITests]

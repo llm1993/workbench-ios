@@ -1,0 +1,26 @@
+{
+  "decomposed_passphrase": "café-test-password",
+  "key": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+  "text": "来自电脑的内容 😀 é\n第二行",
+  "info": {
+    "configured": true,
+    "key_id": "0123456789abcdef",
+    "kdf": "PBKDF2-SHA256",
+    "iterations": 600000,
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "wrapped_key": "AQEBAQEBAQEBAQEBwKxymzCK9y7F53EJimD6t1YiUktq5jHV8ycnLXrYlCXoubNYvBqD9pR6ceItC2Yf"
+  },
+  "item": {
+    "id": 42,
+    "ts": 1793577600,
+    "kind": "text",
+    "source": "windows",
+    "device": "测试电脑",
+    "key_id": "0123456789abcdef",
+    "cid": "abcdef0123456789",
+    "body": "AgICAgICAgICAgICfbW8Uz5z1s9+bSZp1ONe9ppsSsItdIhu2t7xZrvqQyV8VDzYk95SVOgVD+MVhniiDFxPHrDxBYM=",
+    "preview": "AwMDAwMDAwMDAwMDlWlI9DGwtIt7tYHUKj7h757HEWpeHbo0ZxP/PfS9MdK7ZvBf+emQSeRP/oKD6rE43/QZjpGTcIYckW4rtZJIL/n1Bi1q8e8uqCBUypPc"
+  },
+  "image": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAIAAAA2iEnWAAAAFElEQVR4nGO0yApnYGBgYgADKAUAErAA/3k1ppQAAAAASUVORK5CYII=",
+  "image_cipher": "BAQEBAQEBAQEBAQE7deAzyRfi5fKBVtmbLXlUpRZDWZyiWfuHy08oA0i48JrdSZhR3s9aveZt3/JFleGXoa1/J2p4sK0tb3B74LhqyB5+wBcLnBWNTVQ+6uK6ushlYdSXyIYhR/7DoDA"
+}

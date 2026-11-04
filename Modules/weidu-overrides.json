@@ -1,0 +1,15 @@
+{
+  "Data/Database.swift": "Account-isolated cache, transactional list batches, bulk metadata reads, safe upserts and selected-feed query",
+  "Data/Store.swift": "Foreground sync preserves loaded rows; incremental paging adjusts for confirmed state writes; cloud journal, cache, bodies and preferences; reader-session-scoped body loading and isolated slow-fulltext UI fixture",
+  "Views/RootView.swift": "Measured overlay tab bar with content clearance; double tap scrolls to top and hides read article rows; cloud connection/navigation",
+  "Views/ArticleListScreen.swift": "900pt prefetch independent of auto-read, inline retry, top-scroll command, stable tab clearance and independent article cells; locally measured top-header spacer without duplicate List margins or minimum row heights or cross-view preference propagation; preserve top alignment after measured search-header cell relayout without moving an existing reading position; dismiss the search keyboard when opening an article",
+  "Support/Format.swift": "Reuse date formatters and parsed cloud timestamps instead of creating them per row",
+  "Models/AppSettings.swift": "Persist card or plain article list style; older settings retain card appearance",
+  "Views/Components.swift": "PWA density, title, summary, thumbnail, metadata and feed colors; card or plain rows reused by settings preview",
+  "Views/DesignComponents.swift": "Each choice has its own stable accessibility identifier instead of inheriting a shared group identifier",
+  "Views/CachedArticleImage.swift": "Decode device-direct thumbnails at density-specific display size",
+  "Views/FeedsView.swift": "Bottom tab clearance and double-tap scroll to top; host app actions in existing overflow menu",
+  "Views/ReaderView.swift": "Native article-tools sheet; hide unsupported force-fetch in cloud mode; continuous read/extract/render status above content, reduced-motion-aware transitions and explicit render retry",
+  "Views/ReaderWebView.swift": "Generation-scoped visible-document loading callbacks; wait for initial layout before restoring position and crossfading; retain last snapshot on failure and reject stale completions",
+  "Views/SettingsView.swift": "Shared real-row preview, PWA density explanation, explicit hide-read action, bottom clearance and tab scroll to top"
+}

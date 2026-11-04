@@ -1,0 +1,134 @@
+{
+ "format": "clipstudio:file:v1",
+ "doc": "docs/filerelay.md §3；生成：tests/vectors/make_filerelay_v1.py",
+ "note": "块大小在向量里是 16 字节，正式是 4 MiB（4194304）。meta、thumb 是 base64，块是原样字节（这里写成十六进制）。",
+ "dek_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+ "key_id": "0123456789abcdef",
+ "overhead": 28,
+ "files": [
+  {
+   "label": "三块，最后一块不满",
+   "fid": "a1b2c3d4e5f60718",
+   "chunk": 16,
+   "plain_hex": "e69687e4bbb6e4b8ade8bdac20e29c932072656c61792d763120000102030405060708090a0b0c0d",
+   "sha256": "f34ce3f048f9ecd7dc322cfff8bfbdeabc8a4118a5f0c472d9d822a3802f63ed",
+   "meta": {
+    "name": "报告 v2 👋.pdf",
+    "size": 40,
+    "type": "application/pdf",
+    "sha256": "f34ce3f048f9ecd7dc322cfff8bfbdeabc8a4118a5f0c472d9d822a3802f63ed",
+    "chunk": 16
+   },
+   "meta_json": "{\"name\":\"报告 v2 👋.pdf\",\"size\":40,\"type\":\"application/pdf\",\"sha256\":\"f34ce3f048f9ecd7dc322cfff8bfbdeabc8a4118a5f0c472d9d822a3802f63ed\",\"chunk\":16}",
+   "meta_aad": "clipstudio:file:v1:0123456789abcdef:a1b2c3d4e5f60718:meta",
+   "meta_nonce_hex": "6465666768696a6b6c6d6e6f",
+   "meta_sealed": "ZGVmZ2hpamtsbW5vMzmwBxSMdKQchNVNP/Tg3TTwJvoU/Xhc17XKateB1iHujGL6eCK3JomKCFrfeOiuayv0jkMrNUGVn4Omi+eHpir/s2/kfg0nsU2LcCXpVNUCSCsMwfzopbvGUqdIIXwy6Bf0Rgkr2hrWm7ymmmyM2RMT4SqnSdoAhUv3iL6MOvVTrKCYW1R0GKwtdCmr4zT3+KzffGF9+2QUzrmzRhJVUe5NpdYlMU8=",
+   "thumb_hex": "ffd8ffe066616b652d6a7065672d7468756d62ffd9",
+   "thumb_nonce_hex": "707172737475767778797a7b",
+   "thumb_sealed": "cHFyc3R1dnd4eXp76F9Fx9Wo91FpQEa3tm3Fv9hap3Ldz+h58c+VjcPvoJ2GAxSVYA==",
+   "chunks": [
+    {
+     "i": 0,
+     "n": 3,
+     "aad": "clipstudio:file:v1:0123456789abcdef:a1b2c3d4e5f60718:chunk:0:3",
+     "nonce_hex": "0102030405060708090a0b0c",
+     "sealed_hex": "0102030405060708090a0b0ce37cdd315722143ee14adeeb30f176bbf50c2b16e2a329a108e24a092562241d"
+    },
+    {
+     "i": 1,
+     "n": 3,
+     "aad": "clipstudio:file:v1:0123456789abcdef:a1b2c3d4e5f60718:chunk:1:3",
+     "nonce_hex": "0d0e0f101112131415161718",
+     "sealed_hex": "0d0e0f101112131415161718ea000ec024685089f2c38f2389cf92f079fc03eb3db53a96e3840f79507a84ab"
+    },
+    {
+     "i": 2,
+     "n": 3,
+     "aad": "clipstudio:file:v1:0123456789abcdef:a1b2c3d4e5f60718:chunk:2:3",
+     "nonce_hex": "191a1b1c1d1e1f2021222324",
+     "sealed_hex": "191a1b1c1d1e1f20212223242d6e5d700930cb71aad487005d9578dcc9d1196527444050"
+    }
+   ],
+   "cipher_size": 124
+  },
+  {
+   "label": "空文件：一块，只有 nonce 和 tag",
+   "fid": "0f1e2d3c4b5a6978",
+   "chunk": 16,
+   "plain_hex": "",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "meta": {
+    "name": "空.txt",
+    "size": 0,
+    "type": "text/plain",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "chunk": 16
+   },
+   "meta_json": "{\"name\":\"空.txt\",\"size\":0,\"type\":\"text/plain\",\"sha256\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"chunk\":16}",
+   "meta_aad": "clipstudio:file:v1:0123456789abcdef:0f1e2d3c4b5a6978:meta",
+   "meta_nonce_hex": "c8c9cacbcccdcecfd0d1d2d3",
+   "meta_sealed": "yMnKy8zNzs/Q0dLTaloPuuup2RpW27YEMHKTYMKrztttEc0G15kXw67o24zutgjS92dehUKTJc7eNS3CrNl6irE71So5fXX3kTFzCPTGnCJGfEHwuNgyDoX5hbQ8XKweXsJIESidn5uedBJ/Al9ZkinekEZgX1OdGnVfWau49lXqevBD06fIcKO+RmtgYudYxOOHE5dCx6d2lXtNCF1itkUe",
+   "thumb_hex": null,
+   "thumb_nonce_hex": null,
+   "thumb_sealed": null,
+   "chunks": [
+    {
+     "i": 0,
+     "n": 1,
+     "aad": "clipstudio:file:v1:0123456789abcdef:0f1e2d3c4b5a6978:chunk:0:1",
+     "nonce_hex": "0102030405060708090a0b0c",
+     "sealed_hex": "0102030405060708090a0b0c1a0d577d54f3ed1686a964d3a36db2e0"
+    }
+   ],
+   "cipher_size": 28
+  }
+ ],
+ "must_fail": [
+  {
+   "what": "块 1 当成块 0 解（调换顺序）",
+   "file": 0,
+   "sealed_of": 1,
+   "i": 0,
+   "n": 3
+  },
+  {
+   "what": "总块数改成 2（截掉尾巴）",
+   "file": 0,
+   "sealed_of": 1,
+   "i": 1,
+   "n": 2
+  },
+  {
+   "what": "换了文件编号",
+   "file": 0,
+   "sealed_of": 0,
+   "i": 0,
+   "n": 3,
+   "fid": "a1b2c3d4e5f60719"
+  },
+  {
+   "what": "换了 key_id",
+   "file": 0,
+   "sealed_of": 0,
+   "i": 0,
+   "n": 3,
+   "key_id": "0123456789abcdee"
+  },
+  {
+   "what": "密文改了一个字节",
+   "file": 0,
+   "sealed_of": 2,
+   "i": 2,
+   "n": 3,
+   "flip": 20
+  },
+  {
+   "what": "别的文件的块",
+   "file": 0,
+   "from_file": 1,
+   "sealed_of": 0,
+   "i": 0,
+   "n": 1
+  }
+ ]
+}

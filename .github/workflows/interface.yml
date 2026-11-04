@@ -1,0 +1,64 @@
+name: iOS Interface Checks
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Successful iOS Build run with identical product sources
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  interface:
+    runs-on: macos-15
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify tested product sources
+        env:
+          SOURCE_RUN: ${{ inputs.source_run }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, urllib.request
+          run_id = os.environ['SOURCE_RUN']
+          assert run_id.isdigit()
+          base = 'https://api.github.com/repos/' + os.environ['GH_REPOSITORY']
+          headers = {'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'}
+          def get(path):
+              with urllib.request.urlopen(urllib.request.Request(base + path, headers=headers), timeout=30) as response:
+                  return json.load(response)
+          run = get('/actions/runs/' + run_id)
+          assert run['path'] == '.github/workflows/ios.yml' and run['conclusion'] == 'success'
+          assert run['head_repository']['full_name'] == os.environ['GH_REPOSITORY']
+          jobs = get('/actions/runs/' + run_id + '/jobs?per_page=100')['jobs']
+          assert any(any(step['name'] == 'Compile and test native workspace modules' and step['conclusion'] == 'success' for step in job['steps']) for job in jobs)
+          subprocess.run(['git', 'merge-base', '--is-ancestor', run['head_sha'], 'HEAD'], check=True)
+          subprocess.run(['git', 'diff', '--exit-code', run['head_sha'], 'HEAD', '--', 'ClipStudio', 'Modules/WeiduKit'], check=True)
+          print('Product sources match tested and packaged source', run['head_sha'])
+          PY
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      - name: Run native UI checks
+        run: |
+          set -o pipefail
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for values in d["devices"].values() for x in values if x["name"].startswith("iPhone")))')
+          xcodebuild -project ClipStudio.xcodeproj -scheme InterfaceChecks -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE" -derivedDataPath build \
+            -resultBundlePath interface.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- \
+            -parallel-testing-enabled NO test | tee interface.log
+      - name: Export native screenshots
+        if: always()
+        run: xcrun xcresulttool export attachments --path interface.xcresult --output-path screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: interface-validation
+          path: |
+            interface.log
+            screenshots/*.png
+            screenshots/manifest.json
