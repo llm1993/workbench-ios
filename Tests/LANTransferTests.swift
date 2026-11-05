@@ -162,11 +162,21 @@ final class LANTransferTests: XCTestCase {
                 time: Int64(request["timestamp"].int), nonce: request["nonce"].text)
             XCTAssertEqual(headers["X-WB-Key"], vector["public_key"].text)
             XCTAssertEqual(headers["X-WB-Account"], request["account_mac"].text)
-            XCTAssertEqual(headers["X-WB-Signature"], request["signature"].text)
             XCTAssertNil(headers["Authorization"])
             let canonical = try LANProtocol.requestText(hostID: peer.id, clientID: identity.id, time: Int64(request["timestamp"].int),
                 nonce: request["nonce"].text, method: request["method"].text, path: request["path"].text, body: body)
             XCTAssertEqual(canonical, request["canonical"].text)
+            let publicKey = try Curve25519.Signing.PublicKey(rawRepresentation: XCTUnwrap(Data(base64Encoded: vector["public_key"].text)))
+            let generated = try XCTUnwrap(headers["X-WB-Signature"].flatMap { Data(base64Encoded: $0) })
+            let fixture = try XCTUnwrap(Data(base64Encoded: request["signature"].text))
+            let message = Data(canonical.utf8)
+            // CryptoKit may randomize Ed25519 signing; valid signatures need not have identical bytes.
+            XCTAssertEqual(generated.count, 64)
+            XCTAssertTrue(publicKey.isValidSignature(generated, for: message))
+            XCTAssertTrue(publicKey.isValidSignature(fixture, for: message))
+            var tampered = message; tampered.append(0)
+            XCTAssertFalse(publicKey.isValidSignature(generated, for: tampered))
+            XCTAssertFalse(publicKey.isValidSignature(fixture, for: tampered))
         }
     }
     func testRequestPathsCannotEscapeLANProtocolOrAddQueries() throws {
