@@ -8,6 +8,7 @@ final class ClipStore: ObservableObject {
             if oldValue.map(ClipboardContext.init) != clipboardContext {
                 resetClipboardContext()
             }
+            lanTransfers.configure(account: needsUnlock ? nil : account)
         }
     }
     @Published var rows: [ClipRow] = []
@@ -20,6 +21,7 @@ final class ClipStore: ObservableObject {
                 cancelPendingDeletion(announce: false)
                 deletionFailure = nil; selectedData = nil
             }
+            lanTransfers.configure(account: needsUnlock ? nil : account)
         }
     }
     @Published var hasMore = false
@@ -30,6 +32,7 @@ final class ClipStore: ObservableObject {
     @Published private(set) var favoriteReferences: Set<String> = []
     @Published private(set) var pendingDeletion: PendingClipboardDeletion?
     @Published private(set) var deletionFailure: ClipboardDeletionFailure?
+    let lanTransfers = LANTransferStore()
     private let favorites: ClipboardFavorites
     private let deletionWait: () async throws -> Void
     private var deletionTask: Task<Void, Never>?
@@ -60,12 +63,14 @@ final class ClipStore: ObservableObject {
             // UI fixtures start with no local marks so each test is deterministic.
             favoriteReferences = []
             lastSync = Date()
+            lanTransfers.configure(account: account)
             return
         }
         #endif
         do { account = try Keychain.load() }
         catch { self.error = error.localizedDescription }
         favoriteReferences = account.map { favorites.load(for: $0) } ?? []
+        lanTransfers.configure(account: account)
     }
 
     var api: ClipAPI? { account.map { ClipAPI(base: $0.base, token: $0.token, transport: transport) } }

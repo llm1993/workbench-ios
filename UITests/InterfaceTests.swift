@@ -248,9 +248,44 @@ final class InterfaceTests: XCTestCase {
         XCTAssertTrue(app.buttons["clip-send"].isHittable)
         capture(app, name: "clip-persistent-bottom-actions")
         relay.tap()
-        XCTAssertTrue(app.navigationBars["文件中转"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.navigationBars["文件传输"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["选择文件"].waitForExistence(timeout: 5))
         capture(app, name: "clip-file-relay-direct")
+    }
+    func testFileTransferStartsWithLocalDevicesAndCloudRequiresExplicitSelection() {
+        let app = launch("clip")
+        app.buttons["clip-file-relay"].tap()
+        XCTAssertTrue(app.navigationBars["文件传输"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["附近设备"].exists)
+        XCTAssertTrue(app.switches["lan-enabled"].exists)
+        XCTAssertTrue(app.staticTexts["lan-empty-records"].exists)
+        XCTAssertFalse(app.buttons["lan-select-files"].isEnabled)
+        XCTAssertFalse(app.staticTexts["中转中的文件"].exists)
+        app.segmentedControls["transfer-channel"].buttons["云端中转"].tap()
+        XCTAssertTrue(app.staticTexts["中转中的文件"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["选择文件"].exists)
+        capture(app, name: "file-transfer-explicit-cloud")
+    }
+    func testFileTransferLocalHelpDoesNotStartAnUpload() {
+        let app = launch("clip")
+        app.buttons["clip-file-relay"].tap()
+        let enabled = app.switches["lan-enabled"]
+        XCTAssertTrue(enabled.waitForExistence(timeout: 8))
+        if enabled.value as? String == "0" { enabled.tap() }
+        XCTAssertTrue(app.buttons["lan-help"].waitForExistence(timeout: 5))
+        app.buttons["lan-help"].tap()
+        XCTAssertTrue(app.alerts["没有发现电脑？"].waitForExistence(timeout: 5))
+        app.alerts.buttons["知道了"].tap()
+        XCTAssertFalse(app.buttons["lan-select-files"].isEnabled)
+        capture(app, name: "file-transfer-local-permission-help")
+    }
+    func testFileTransferSupportsDarkLargeTextAndKeepsCloudChoiceExplicit() {
+        let app = launch("clip", dark: true, largeText: true)
+        app.buttons["clip-file-relay"].tap()
+        XCTAssertTrue(app.segmentedControls["transfer-channel"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["附近设备"].exists)
+        XCTAssertTrue(app.switches["lan-enabled"].exists)
+        capture(app, name: "file-transfer-local-large-dark")
     }
     func testClipboardMenuOnlyExposesClipboardEncryptionSettings() {
         let app = launch("clip")

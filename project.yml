@@ -6,8 +6,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.3.6"
-    CURRENT_PROJECT_VERSION: "10"
+    MARKETING_VERSION: "0.3.7"
+    CURRENT_PROJECT_VERSION: "11"
 packages:
   SwiftSoup:
     url: https://github.com/scinfu/SwiftSoup.git
@@ -41,6 +41,8 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
+        NSLocalNetworkUsageDescription: 用于发现同一局域网中的电脑并加密直传文件，直传文件不上传服务器。
+        NSBonjourServices: ["_workbench._tcp"]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false

@@ -1,14 +1,15 @@
 # 工作台 · iOS
 
-原生 SwiftUI 工作台，包含有数、未读、加密剪贴板与文件中转、股讯和房贷计算器。最低支持 iOS 17。
+原生 SwiftUI 工作台，包含有数、未读、加密剪贴板与文件传输、股讯和房贷计算器。最低支持 iOS 17。
 
-当前源码版本为 **0.3.6（10）**，包含有数与房贷的原生界面改版。此仓库从整理后的当前源码建立，不导入旧 Git 历史、旧构建记录或本机产物；测试和构建状态以本仓库的 Actions 为准。
+当前源码版本为 **0.3.7（11）**，在有数与房贷原生改版的基础上，加入原生局域网文件直传。此仓库从整理后的当前源码建立，不导入旧 Git 历史、旧构建记录或本机产物；测试和构建状态以本仓库的 Actions 为准。
 
 ## 使用与数据
 
 - 首次使用需填写自己部署的工作台 HTTPS 根地址，例如 `https://workbench.example.com`；示例域名不是可用服务。
 - 登录账号与剪贴板加密解锁是两个独立步骤。除可选的本机阅读库外，工作台功能需要兼容的后端；本仓库不包含后端服务、账号或数据库。
 - 登录令牌和内容密钥由运行时写入 Keychain，不应放入源码或配置文件。剪贴板正文在设备端加密。
+- 文件传输提供原生 Windows ↔ iOS 局域网直传与明确选择的云端中转；首次配对和收件需确认，直传不会静默转为云端上传。见[使用与验证边界](docs/lan-transfer.md)。
 - 房贷通过 JavaScriptCore 调用随 App 打包的纯计算资源，不嵌入或下载网页应用。
 - 未读是独立的原生框架模块，保留阅读、缓存、媒体、全文和离线状态处理。
 
@@ -54,6 +55,16 @@ python -I scripts/check-sensitive.py
 python scripts/check-reader-cache.py
 ```
 
+安装检查工具依赖后，验证局域网协议向量和通道边界（不连接设备）：
+
+```bash
+python -m pip install -r scripts/requirements-checks.txt
+```
+
+```bash
+python scripts/check-lan-transfer.py
+```
+
 `scripts/check-contracts.py`、`scripts/check-mortgage.cjs` 和完整的 `scripts/check-native.py` 是跨项目开发检查，需要另外提供同级 `workbench` 后端/PWA 与 `weidu-ios` 参考源码，以及各自所需依赖；它们不是独立 Xcode 构建的前置条件。Windows 上的语法或协议检查不等于 Swift 类型检查、模拟器测试或真机验收。
 
 原生测试 scheme：
@@ -67,6 +78,7 @@ python scripts/check-reader-cache.py
 - [公开快照说明](docs/public-snapshot.md)
 - [有数界面与数据边界](docs/youshu-ui.md)
 - [房贷界面与验证边界](docs/mortgage-ui.md)
+- [局域网文件传输与验证边界](docs/lan-transfer.md)
 - [原生阅读模块来源](Modules/README.md)
 
 请勿提交真实账号、Token、环境文件、签名证书、私钥、本机数据库或个人日志。固定的协议测试向量与 DEBUG 模拟数据不是生产凭证。

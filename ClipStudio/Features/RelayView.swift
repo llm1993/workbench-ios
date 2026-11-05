@@ -72,12 +72,12 @@ enum RelayCrypto {
         let end=try url.resourceValues(forKeys:[.fileSizeKey,.contentModificationDateKey])
         guard end.fileSize==size,end.contentModificationDate==values.contentModificationDate else{throw ClipError("文件读取过程中被修改，请重新选择")}
         let hash=hasher.finalize().map{String(format:"%02x",$0)}.joined()
-        let meta:JSONValue = .object(["name":.string(url.lastPathComponent),"size":.number(Double(size)),"type":.string(values.contentType?.preferredMIMEType ?? "application/octet-stream"),"sha256":.string(hash),"chunk":.number(Double(chunk))])
+        let meta:JSONValue = .object(["name":.string(url.lastPathComponent),"size":.integer(size),"type":.string(values.contentType?.preferredMIMEType ?? "application/octet-stream"),"sha256":.string(hash),"chunk":.integer(chunk)])
         let keyID=account.keyInfo.key_id ?? ""
         let sealed=try ClipCrypto.seal(JSONEncoder().encode(meta),key:account.key,aad:"clipstudio:file:v1:\(keyID):\(fid):meta")
         let jpeg = thumbnail(url: url, size: size, type: values.contentType)
         let thumb: JSONValue = try jpeg.map { JSONValue.string(try ClipCrypto.seal($0, key: account.key, aad: "clipstudio:file:v1:\(keyID):\(fid):thumb")) } ?? .null
-        let payload:JSONValue = .object(["fid":.string(fid),"key_id":.string(keyID),"chunks":.number(Double(chunks)),"cipher_size":.number(Double(size+28*chunks)),"meta":.string(sealed),"thumb":thumb,"source":.string("iphone"),"device":.string("iPhone · 工作台")])
+        let payload:JSONValue = .object(["fid":.string(fid),"key_id":.string(keyID),"chunks":.integer(chunks),"cipher_size":.integer(size+28*chunks),"meta":.string(sealed),"thumb":thumb,"source":.string("iphone"),"device":.string("iPhone · 工作台")])
         try JSONEncoder().encode(payload).write(to:folder.appendingPathComponent("upload.json"),options:[.atomic,.completeFileProtection]);complete=true
         return payload
     }
@@ -95,7 +95,35 @@ struct NativeShareSheet:UIViewControllerRepresentable{
     func updateUIViewController(_ uiViewController:UIActivityViewController,context:Context){}
 }
 
-struct RelayView:View{
+struct RelayView: View {
+    @EnvironmentObject private var store: ClipStore
+    @State private var cloud = false
+    @State private var forwardedFID: String?
+    var body: some View {
+        VStack(spacing: 0) {
+            Picker("文件传输方式", selection: $cloud) {
+                Text("附近与记录").tag(false)
+                Text("云端中转").tag(true)
+            }.pickerStyle(.segmented).padding(.horizontal, 20).padding(.vertical, 12)
+                .accessibilityIdentifier("transfer-channel")
+            if cloud {
+                CloudRelayView(initialUploadFID: forwardedFID, onUploaded: { fid in
+                    store.lanTransfers.cloudUploaded(fid)
+                }, onInitialUploadHandled: { fid in
+                    if forwardedFID == fid { forwardedFID = nil }
+                })
+            } else {
+                LANTransferView(model: store.lanTransfers) { fid in forwardedFID = fid; cloud = true }
+            }
+        }.background(AmbientBackground()).navigationTitle("文件传输")
+            .onChange(of: store.clipboardContext) { _, _ in forwardedFID = nil; cloud = false }
+    }
+}
+
+private struct CloudRelayView:View{
+    var initialUploadFID: String? = nil
+    var onUploaded: (String) -> Void = { _ in }
+    var onInitialUploadHandled: (String) -> Void = { _ in }
     @EnvironmentObject private var store:ClipStore
     @Environment(\.scenePhase) private var phase
     @StateObject private var connectivity = TransferConnectivity()
@@ -129,8 +157,8 @@ struct RelayView:View{
         ScrollView{
             LazyVStack(alignment:.leading,spacing:16){
                 NativeCard{
-                    Text("手机电脑互传文件").font(.headline)
-                    Text("文件先在本机加密，传输时请保持 App 在前台。切走暂停，回来可继续。").font(.caption).foregroundStyle(.secondary)
+                    Text("云端中转").font(.headline)
+                    Text("文件会在本机加密后上传服务器，账号下其他设备可稍后下载。传输时请保持 App 在前台。").font(.caption).foregroundStyle(.secondary)
                     Button("选择文件",systemImage:"plus"){choosing=true}.disabled(active || usage.isNull || !usage["accepting"].flag)
                     Text("已用 \(ByteCountFormatter.string(fromByteCount:Int64(usage["used"].double),countStyle:.file)) / \(ByteCountFormatter.string(fromByteCount:Int64(usage["quota"].double),countStyle:.file)) · \(usage["ttl_days"].int) 天后到期").font(.caption)
                     if !usage["accepting"].flag && !usage.isNull{Text(usage["refused"].text).font(.caption).foregroundStyle(.red)}
@@ -173,7 +201,7 @@ struct RelayView:View{
                 }
                 if more{Button("加载更早文件"){Task{await load(append:true)}}.disabled(active || loading)}
             }.padding(20)
-        }.background(AmbientBackground()).navigationTitle("文件中转")
+        }.background(AmbientBackground()).navigationTitle("文件传输")
             .fileImporter(isPresented:$choosing,allowedContentTypes:[.item],allowsMultipleSelection:true){result in
                 switch result{case .success(let urls):pendingSources+=urls;downloadToResume=nil;start{try await resumeAll()};case .failure(let e):failure=e.localizedDescription}
             }
@@ -181,14 +209,21 @@ struct RelayView:View{
                 if completed{Task{do{if item.accountScope == accountScope, item.keyID == store.account?.keyInfo.key_id, let api=store.api{_=try await api.document("/api/relay/files/\(item.remoteID)/downloaded",method:"POST")}}catch{failure="文件已导出，下载次数回写失败。"}}}
             }}
             .confirmationDialog(pending?.title ?? "确认",isPresented:Binding(get:{pending != nil},set:{if !$0{pending=nil}}),titleVisibility:.visible){if let p=pending{Button("确认删除",role:.destructive){Task{await remove(p)}}}}
-            .task{await load();loadQueue()}.refreshable{await load()}
+            .task {
+                let automaticFID = initialUploadFID
+                if let fid = automaticFID { onInitialUploadHandled(fid) }
+                await load(); loadQueue()
+                if let fid = automaticFID, let file = queued.first(where: { $0["fid"].text == fid }), usage["accepting"].flag {
+                    start { try await upload(file) }
+                }
+            }.refreshable{await load()}
             .onChange(of:phase){_,p in
-                UIApplication.shared.isIdleTimerDisabled = active && p == .active
+                TransferActivity.set("cloud", active: active && p == .active)
                 if p != .active { if active { resumeOnForeground=true };task?.cancel() }
                 else {loadQueue();Task{await load()};resumePendingIntent()}
             }
             .onChange(of:active){_,running in
-                UIApplication.shared.isIdleTimerDisabled = running && phase == .active
+                TransferActivity.set("cloud", active: running && phase == .active)
                 if !running { resumePendingIntent() }
             }
             .onChange(of:connectivity.connected) { _, connected in
@@ -200,7 +235,7 @@ struct RelayView:View{
                 resumeOnForeground=false;resumeOnNetwork=false;task?.cancel();pendingSources=[];downloadToResume=nil;share=nil;cleanupExport()
                 files=[];usage = .null;Task{await load()};loadQueue()
             }
-            .onDisappear{resumeOnForeground=false;resumeOnNetwork=false;task?.cancel();cleanupExport();UIApplication.shared.isIdleTimerDisabled=false}
+            .onDisappear{resumeOnForeground=false;resumeOnNetwork=false;task?.cancel();cleanupExport();TransferActivity.set("cloud", active: false)}
     }
     private func fileName(_ file:JSONValue)->String{
         guard let account=store.account,file["key_id"].text==account.keyInfo.key_id,let meta=try? RelayCrypto.openMeta(file,key:account.key) else{return "无法解密的文件（请重新解锁）"}
@@ -216,7 +251,7 @@ struct RelayView:View{
     private func validFID(_ fid:String)->Bool{fid.range(of:"^[0-9a-f]{16}$",options:.regularExpression) != nil}
     private func start(_ operation:@escaping ()async throws->Void){
         guard !active else{return};active=true;progress=0;failure=nil;notice=nil
-        UIApplication.shared.isIdleTimerDisabled = phase == .active
+        TransferActivity.set("cloud", active: phase == .active)
         task=Task{defer{active=false;loadQueue()};do{try await operation()}catch is CancellationError{notice="已暂停，可继续传输"}catch let e as URLError where e.code == .cancelled{notice="已暂停，可继续传输"}catch{failure=error.localizedDescription}}
     }
     private func continueIntent(){
@@ -239,6 +274,7 @@ struct RelayView:View{
             usage = nextUsage; failure = nil
             var new=page["files"].array+page["uploading"].array
             if append{let known=Set(files.map(\.selfKey));new=new.filter{!known.contains($0.selfKey)};files+=new}else{files=new}
+            for file in new where file["status"].text == "ready" && file["key_id"].text == account.keyInfo.key_id { onUploaded(file["fid"].text) }
             more=page["has_more"].flag
             beforeID=page["files"].array.last?["id"].int
         } catch is CancellationError { }
@@ -277,7 +313,7 @@ struct RelayView:View{
             _=try await api.transferDocument("/api/relay/files/\(remote["id"].int)/complete",method:"POST")
         }
         try Task.checkCancellation(); guard sameAccount(account) else { throw CancellationError() }
-        try FileManager.default.removeItem(at:folder);progress=1;notice="文件已上传";await load()
+        try FileManager.default.removeItem(at:folder);progress=1;notice="文件已上传至云端中转，另一台设备尚不一定收到";onUploaded(fid);await load()
     }
     private func retryBytes(api:ClipAPI,path:String,method:String="GET",body:Data?=nil)async throws->Data{
         try await api.transferBytes(path, method: method, body: body)

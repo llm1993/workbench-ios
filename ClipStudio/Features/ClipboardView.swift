@@ -298,7 +298,7 @@ struct RootView: View {
         NavigationLink {
             RelayView().environmentObject(store)
         } label: {
-            Label("文件中转站", systemImage: "folder").font(.subheadline.weight(.semibold))
+            Label("文件传输", systemImage: "folder").font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.accent).padding(.horizontal, 14).frame(minHeight: 48)
                 .panelSurface(radius: 13)
         }.buttonStyle(GlassPressStyle()).disabled(!unlocked).accessibilityIdentifier("clip-file-relay")
