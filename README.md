@@ -35,9 +35,21 @@ xcodegen generate
 xcodebuild -project ClipStudio.xcodeproj -scheme ClipStudio -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 ```
 
-GitHub Actions 的 **iOS Build** 仅手动触发。默认重新运行原生单元测试；启用 `interface_checks` 后，会运行原生界面检查并导出测试截图。构建产物为 `ClipStudio-unsigned-ipa`，**未签名，必须自行签名后才能安装**。
+GitHub Actions 的 **iOS Build** 仅手动触发，使用 `build_mode` 选择验证范围：
 
-独立的 **iOS Interface Checks** 要求本仓库内成功且产品源码相同的 `source_run`。验证复用会核对运行来源与源码，不能使用其他仓库或不同源码的历史成功记录。
+| 模式 | 流程 | 使用场景 |
+| --- | --- | --- |
+| `unit`（默认） | 原生单测 + 真机 Release + IPA | 日常验证，不跑全量 UI |
+| `package` | 真机 Release + IPA；不启动模拟器、不运行测试 | 已知源码快速试装，明确标为“未运行测试” |
+| `full` | 原生单测 + 全量 UI + 真机 Release + IPA | 大功能或发版前完整验收 |
+
+阅读器布局用例仍在 `full` 的 UI 套件中执行一次，不再单独重复预检。仅 `full` 导出截图；保留旧参数 `interface_checks=true`，等价于选择 `full`，不能与 `package` 同时使用。
+
+产物仍为 `ClipStudio-unsigned-ipa`，**未签名，必须自行签名后才能安装**。每次在 Actions 摘要及 `validation` 产物的 `validation-summary.json` 中记录验证级别，不能把快速包称作“测试通过”。
+
+`validated_run` 只可在 `unit` 模式显式指定：来源必须是本仓库成功完成、真正执行过原生单测且源码匹配的运行。产品代码、测试、项目配置或依赖锁文件变更会拒绝复用；仅工作流策略及说明文档变更允许复用。失败、取消、仅打包或只复用旧测试的运行均不作为新的验证来源。`full` 必须重新运行测试。
+
+独立的 **iOS Interface Checks** 保留同一 `source_run` 门禁，并额外重跑 UI。构建流程的 [本地策略检查](scripts/test-ios-build-policy.py) 不依赖 Xcode或网络；本轮没有增加 DerivedData 缓存或放宽源码校验来换取速度。
 
 ## 本地检查
 
@@ -63,6 +75,10 @@ python -m pip install -r scripts/requirements-checks.txt
 
 ```bash
 python scripts/check-lan-transfer.py
+```
+
+```bash
+python scripts/test-ios-build-policy.py
 ```
 
 `scripts/check-contracts.py`、`scripts/check-mortgage.cjs` 和完整的 `scripts/check-native.py` 是跨项目开发检查，需要另外提供同级 `workbench` 后端/PWA 与 `weidu-ios` 参考源码，以及各自所需依赖；它们不是独立 Xcode 构建的前置条件。Windows 上的语法或协议检查不等于 Swift 类型检查、模拟器测试或真机验收。

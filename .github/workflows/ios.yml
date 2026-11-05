@@ -1,14 +1,20 @@
 name: iOS Build
+run-name: "iOS ${{ inputs.interface_checks && 'full' || inputs.build_mode || 'unit' }} · ${{ github.ref_name }}"
 on:
   workflow_dispatch:
     inputs:
+      build_mode:
+        description: "unit=日常单测+打包；package=仅打包（未测试）；full=单测+全量UI+打包"
+        type: choice
+        options: [unit, package, full]
+        default: unit
       validated_run:
-        description: "Reuse successful native tests from this run only if non-workflow files are unchanged"
+        description: "Optional in unit mode: reuse a successful matching-source native test run"
         required: false
         default: ""
         type: string
       interface_checks:
-        description: Run app navigation UI checks and export screenshots with native tests
+        description: "Legacy compatibility: true selects full validation (cannot combine with package)"
         type: boolean
         default: false
 permissions:
@@ -22,74 +28,31 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Verify reusable native validation
-        if: inputs.validated_run != ''
+      - name: Select build and validation mode
+        id: policy
         env:
+          BUILD_MODE: ${{ inputs.build_mode || 'unit' }}
+          INTERFACE_CHECKS: ${{ inputs.interface_checks || false }}
           VALIDATED_RUN: ${{ inputs.validated_run }}
+        run: python3 scripts/ios-build-policy.py configure
+      - name: Verify reusable native validation
+        id: reuse
+        if: steps.policy.outputs.reuse_run != ''
+        env:
           GH_TOKEN: ${{ github.token }}
-          GH_REPOSITORY: ${{ github.repository }}
-        run: |
-          set -o pipefail
-          python3 - <<'PY' | tee validation-reuse.log
-          import io, json, os, re, subprocess, urllib.error, urllib.request, zipfile
-          run_id = os.environ['VALIDATED_RUN']
-          assert run_id.isdigit(), 'Validation run must be numeric'
-          repo = os.environ['GH_REPOSITORY']
-          base = 'https://api.github.com/repos/' + repo
-          headers = {'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'}
-          def get(path):
-              with urllib.request.urlopen(urllib.request.Request(base + path, headers=headers), timeout=30) as response:
-                  return json.load(response)
-          run = get('/actions/runs/' + run_id)
-          assert run['path'] == '.github/workflows/ios.yml', 'Unexpected validation workflow'
-          assert run['head_repository']['full_name'] == repo, 'Unexpected source repository'
-          assert run['status'] == 'completed', 'Validation must have finished'
-          jobs = get('/actions/runs/' + run_id + '/jobs?per_page=100')['jobs']
-          test_steps = [step for job in jobs if job['name'] == 'build' for step in job['steps'] if step['name'] == 'Compile and test native workspace modules']
-          assert len(test_steps) == 1, 'Expected one native validation step'
-          if test_steps[0]['conclusion'] != 'success':
-              # A runner timeout may fire after Xcode has already finished every
-              # test. Accept only this specific case, verified from archived logs.
-              assert test_steps[0]['conclusion'] == 'failure' and run['conclusion'] == 'failure'
-              class NoRedirect(urllib.request.HTTPRedirectHandler):
-                  def redirect_request(self, *args, **kwargs): return None
-              request = urllib.request.Request(base + '/actions/runs/' + run_id + '/logs', headers=headers)
-              try:
-                  with urllib.request.build_opener(NoRedirect).open(request, timeout=30) as response:
-                      archive = response.read()
-              except urllib.error.HTTPError as error:
-                  if error.code != 302: raise
-                  with urllib.request.urlopen(error.headers['Location'], timeout=60) as response:
-                      archive = response.read()
-              with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
-                  logs = [name for name in bundle.namelist() if name.endswith('_Compile and test native workspace modules.txt')]
-                  assert len(logs) == 1, 'Expected the exact test-step log'
-                  log = bundle.read(logs[0]).decode('utf-8')
-              success = log.rfind('** TEST SUCCEEDED **')
-              timeout = log.rfind("##[error]The action 'Compile and test native workspace modules' has timed out after")
-              assert 0 <= success < timeout, 'Tests must succeed before the runner timeout'
-              assert '** TEST FAILED **' not in log and not re.search(r"Test Case .*\]' failed", log)
-              for count in (32, 36, 17):
-                  assert re.search(r'Executed ' + str(count) + r' tests, with 0 failures \(0 unexpected\)', log), 'Missing passing suite: ' + str(count)
-              errors = [line for line in log.splitlines() if '##[error]' in line]
-              assert len(errors) == 1 and 'has timed out after' in errors[0], 'Unexpected validation error'
-              print('Xcode completed 68 native and 17 UI tests successfully before the runner timeout.')
-          subprocess.run(['git', 'merge-base', '--is-ancestor', run['head_sha'], 'HEAD'], check=True)
-          subprocess.run(['git', 'diff', '--exit-code', run['head_sha'], 'HEAD', '--', '.', ':!.github/workflows/ios.yml'], check=True)
-          print('Reused successful native tests from run', run_id, 'source', run['head_sha'])
-          print('All non-workflow files are identical to the tested source.')
-          PY
+          SOURCE_RUN: ${{ steps.policy.outputs.reuse_run }}
+        run: python3 scripts/ios-build-policy.py verify-source --run "$SOURCE_RUN"
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate project
         run: xcodegen generate
       - name: Select simulator
-        if: inputs.validated_run == ''
+        if: steps.policy.outputs.run_tests == 'true'
         run: |
           DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for values in d["devices"].values() for x in values if x["name"].startswith("iPhone")))')
           echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
       - name: Boot simulator before tests
-        if: inputs.validated_run == ''
+        if: steps.policy.outputs.run_tests == 'true'
         timeout-minutes: 4
         run: |
           set -o pipefail
@@ -104,24 +67,15 @@ jobs:
               raise
           print('Simulator boot completed.', flush=True)
           PY
-      - name: Preflight reader search layout and touch regression
-        if: inputs.interface_checks && inputs.validated_run == ''
-        timeout-minutes: 18
-        run: |
-          set -o pipefail
-          xcodebuild -project ClipStudio.xcodeproj -scheme InterfaceChecks -configuration Debug \
-            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build \
-            -resultBundlePath layout-preflight.xcresult \
-            -only-testing:ClipStudioUITests/InterfaceTests/testReaderFirstRowFollowsHeaderOnLaunchSearchAndReturnToTop \
-            CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- -parallel-testing-enabled NO test | tee layout-preflight.log
       - name: Compile and test native workspace modules
-        if: inputs.validated_run == ''
+        id: native
+        if: steps.policy.outputs.run_tests == 'true'
         timeout-minutes: 25
+        env:
+          TEST_SCHEME: ${{ steps.policy.outputs.scheme }}
         run: |
           set -o pipefail
-          SCHEME=ClipStudio
-          if [ "${{ inputs.interface_checks }}" = true ]; then SCHEME=AcceptanceChecks; fi
-          xcodebuild -project ClipStudio.xcodeproj -scheme "$SCHEME" -configuration Debug \
+          xcodebuild -project ClipStudio.xcodeproj -scheme "$TEST_SCHEME" -configuration Debug \
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build \
             -resultBundlePath validation.xcresult \
             CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- -parallel-testing-enabled NO test | tee tests.log
@@ -132,6 +86,7 @@ jobs:
             -destination 'generic/platform=iOS' -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tee build.log
       - name: Package IPA
+        id: package
         run: |
           set -euo pipefail
           APP=build/Build/Products/Release-iphoneos/ClipStudio.app
@@ -141,17 +96,24 @@ jobs:
           mkdir -p Payload
           cp -R "$APP" Payload/
           zip -qry ClipStudio-unsigned.ipa Payload
+      - name: Record validation level
+        if: always() && steps.policy.outcome == 'success'
+        env:
+          BUILD_MODE: ${{ inputs.build_mode || 'unit' }}
+          INTERFACE_CHECKS: ${{ inputs.interface_checks || false }}
+          VALIDATED_RUN: ${{ inputs.validated_run }}
+          NATIVE_OUTCOME: ${{ steps.native.outcome }}
+          REUSE_OUTCOME: ${{ steps.reuse.outcome }}
+          PACKAGE_OUTCOME: ${{ steps.package.outcome }}
+        run: python3 scripts/ios-build-policy.py summarize
       - uses: actions/upload-artifact@v4
         with:
           name: ClipStudio-unsigned-ipa
           path: ClipStudio-unsigned.ipa
           if-no-files-found: error
       - name: Export UI screenshots
-        if: always() && inputs.interface_checks && inputs.validated_run == ''
+        if: always() && steps.policy.outputs.export_ui == 'true'
         run: |
-          if [ -d layout-preflight.xcresult ]; then
-            xcrun xcresulttool export attachments --path layout-preflight.xcresult --output-path screenshots-layout
-          fi
           if [ -d validation.xcresult ]; then
             xcrun xcresulttool export attachments --path validation.xcresult --output-path screenshots
           fi
@@ -161,9 +123,7 @@ jobs:
           name: validation
           path: |
             *.log
+            validation-summary.json
             screenshots/*.png
             screenshots/*.txt
             screenshots/manifest.json
-            screenshots-layout/*.png
-            screenshots-layout/*.txt
-            screenshots-layout/manifest.json
