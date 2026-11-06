@@ -22,8 +22,17 @@ struct VideoPresentation: Identifiable {
 
 enum ReaderMedia {
     static func httpURL(_ raw: String, base: String = "") -> URL? {
-        guard !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !raw.hasPrefix("#") else { return nil }
-        guard let url = URL(string: raw, relativeTo: URL(string: base))?.absoluteURL,
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty, !value.hasPrefix("#") else { return nil }
+        // 源站常用协议相对地址（//player.bilibili.com/...）。Foundation 的
+        // URL(string:relativeTo:) 对这种写法不保证带上 scheme，显式补一个。
+        let candidate: String
+        if value.hasPrefix("//") {
+            candidate = (URL(string: base)?.scheme?.lowercased() ?? "https") + ":" + value
+        } else {
+            candidate = value
+        }
+        guard let url = URL(string: candidate, relativeTo: URL(string: base))?.absoluteURL,
               ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host != nil else { return nil }
         return url
     }

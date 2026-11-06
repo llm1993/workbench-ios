@@ -34,6 +34,8 @@ struct ReaderWebView: UIViewRepresentable {
     let onOpenExternal: (URL) -> Void
     let onBackDrag: (CGFloat) -> Void
     let onBackEnd: (CGFloat, CGFloat, Bool) -> Void
+    let onOriginalDrag: (CGFloat) -> Void
+    let onOriginalEnd: (CGFloat, CGFloat, Bool) -> Void
     let onPullActive: (Bool) -> Void
     let onProgress: (Double) -> Void
     let onShowHeader: (Bool) -> Void
@@ -64,6 +66,7 @@ struct ReaderWebView: UIViewRepresentable {
         private weak var container: UIView?
         private weak var webView: WKWebView?
         private weak var pullGesture: UIPanGestureRecognizer?
+        private weak var originalGesture: UIPanGestureRecognizer?
         private var loadedHTML = ""
         private var loadedContentID = ""
         private var activeNavigation: WKNavigation?
@@ -236,10 +239,24 @@ struct ReaderWebView: UIViewRepresentable {
             back.delegate = self
             back.cancelsTouchesInView = false
             web.addGestureRecognizer(back)
+            // Right-edge inward pan: a dedicated recognizer keeps the existing
+            // horizontal-back and vertical-turn policies untouched.
+            let original = UIPanGestureRecognizer(target: self, action: #selector(handleOriginal(_:)))
+            original.maximumNumberOfTouches = 1
+            original.delegate = self
+            original.cancelsTouchesInView = false
+            web.addGestureRecognizer(original)
+            originalGesture = original
         }
 
         func gestureRecognizer(_ gesture: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-            guard phase == .idle, activeNavigation == nil, let web = webView else { return false }
+            guard phase == .idle, activeNavigation == nil, let web = webView, let container else { return false }
+            if gesture === originalGesture {
+                guard let url = parent.baseURL,
+                      ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { return false }
+                return ReaderEdgePolicy.isEdgeStart(x: touch.location(in: container).x,
+                                                    width: container.bounds.width)
+            }
             var view = touch.view
             while let current = view, current !== web {
                 if let scroll = current as? UIScrollView, scroll !== web.scrollView,
@@ -263,6 +280,9 @@ struct ReaderWebView: UIViewRepresentable {
                                                        velocityX: velocity.x, velocityY: velocity.y)
                 return direction != nil
             }
+            if gesture === originalGesture {
+                return ReaderEdgePolicy.isLeftward(velocityX: velocity.x, velocityY: velocity.y)
+            }
             return velocity.x > 0 && velocity.x > abs(velocity.y) * 1.2
         }
 
@@ -276,6 +296,16 @@ struct ReaderWebView: UIViewRepresentable {
             case .changed: parent.onBackDrag(distance)
             case .ended: parent.onBackEnd(distance, gesture.velocity(in: nil).x, false)
             case .cancelled, .failed: parent.onBackEnd(distance, 0, true)
+            default: break
+            }
+        }
+
+        @objc private func handleOriginal(_ gesture: UIPanGestureRecognizer) {
+            let distance = ReaderEdgePolicy.distance(translationX: gesture.translation(in: nil).x)
+            switch gesture.state {
+            case .began, .changed: parent.onOriginalDrag(distance)
+            case .ended: parent.onOriginalEnd(distance, gesture.velocity(in: nil).x, false)
+            case .cancelled, .failed: parent.onOriginalEnd(distance, 0, true)
             default: break
             }
         }

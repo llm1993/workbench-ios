@@ -2,6 +2,10 @@ import Foundation
 import SwiftSoup
 
 enum ReaderHTML {
+    // 服务端 sanitize.py 把命中白名单的 iframe/embed/object 降级成带这个 class 的纯链接。
+    // 客户端再净化一次缓存正文时，认出它并统一渲染成 .media-link 卡片。
+    private static let mediaMarkerClass = "weidu-media-link"
+
     private static let blockedTags: Set<String> = [
         "script", "style", "object", "embed", "form", "input", "button",
         "select", "textarea", "noscript", "svg", "canvas",
@@ -128,7 +132,7 @@ enum ReaderHTML {
         .source-bar a,.reader-actions a{padding:6px 10px;border:1px solid var(--line);border-radius:16px}
         .reader-actions{margin-top:28px;justify-content:center}
         .reader-image{border:0;display:block}
-        .media-link{display:block;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:20px 0;text-align:center;font-family:-apple-system,sans-serif;font-size:14px}
+        .media-link{display:block;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:20px 0;text-align:center;font-family:-apple-system,sans-serif;font-size:14px;font-weight:600}
         .media-link img{margin:0 auto 12px}
         ::selection{background:var(--selection)}
         </style>
@@ -184,8 +188,16 @@ enum ReaderHTML {
             return "<a class=\"media-link\" href=\"\(Format.escapeHTML(action))\">\(poster)▶ \(tag == "audio" ? "播放音频" : "播放视频")</a>"
         }
         if tag == "iframe" {
-            guard let raw = try? element.attr("src"), let url = ReaderMedia.httpURL(raw, base: base) else { return "" }
-            return "<a class=\"media-link\" href=\"\(Format.escapeHTML(url.absoluteString))\">在原站观看视频</a>"
+            // 本机抓原文拿到的是未净化的 iframe；云端拿到的是服务端降级后的
+            // <a class="weidu-media-link">。两条路都收敛成同一个 .media-link 卡片。
+            // 懒加载播放器把地址放在 data-src（src 常是 about:blank），逐个候选试。
+            let candidates = ["src", "data-src", "data-url", "data-original", "data-echo", "data"]
+            let mediaURL = candidates.compactMap { key -> URL? in
+                let value = ((try? element.attr(key)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                return ReaderMedia.httpURL(value, base: base)
+            }.first
+            guard let url = mediaURL else { return "" }
+            return "<a class=\"media-link\" href=\"\(Format.escapeHTML(url.absoluteString))\">▶ 在原站观看视频</a>"
         }
 
         if tag == "img" {
@@ -200,12 +212,23 @@ enum ReaderHTML {
             // Images have their own app link; avoid nesting anchors from feed markup.
             if proxyImages && children.contains("weidu-reader://image") { return children }
             let href = ((try? element.attr("href")) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let classes = ((try? element.attr("class")) ?? "").lowercased()
+            let isMediaCard = classes.contains(ReaderHTML.mediaMarkerClass) || classes.contains("media-link")
+            // renderImage / 视频分支生成的是 weidu-reader:// action 链接。缓存正文会被
+            // document() 再净化一次，这里必须原样放行，否则降级成 <span> 就点不动了。
+            if let action = URL(string: href), action.scheme?.lowercased() == "weidu-reader" {
+                var link = " href=\"\(Format.escapeHTML(href))\""
+                if isMediaCard { link += " class=\"media-link\"" }
+                return "<a\(link)>\(children)</a>"
+            }
             guard let url = absolute(href, base: base),
                   let scheme = url.scheme?.lowercased(),
                   scheme == "http" || scheme == "https" else {
                 return "<span>\(children)</span>"
             }
             attributes = " href=\"\(Format.escapeHTML(url.absoluteString))\""
+            // 服务端把命中白名单的嵌入视频降级成链接；这里把它还原成媒体卡片。
+            if isMediaCard { attributes += " class=\"media-link\"" }
         } else if tag == "td" || tag == "th" {
             for key in ["colspan", "rowspan"] {
                 let value = ((try? element.attr(key)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)

@@ -9,7 +9,9 @@
   "Views/DesignComponents.swift": "Each choice has its own stable accessibility identifier instead of inheriting a shared group identifier",
   "Views/CachedArticleImage.swift": "Decode device-direct thumbnails at density-specific display size",
   "Views/FeedsView.swift": "Bottom tab clearance and double-tap scroll to top; host app actions in existing overflow menu",
-  "Views/ReaderView.swift": "Native article-tools sheet; hide unsupported force-fetch in cloud mode; continuous read/extract/render status above content, reduced-motion-aware transitions and explicit render retry",
-  "Views/ReaderWebView.swift": "Generation-scoped visible-document loading callbacks; wait for initial layout before restoring position and crossfading; retain last snapshot on failure and reject stale completions",
-  "Views/SettingsView.swift": "Shared real-row preview, PWA density explanation, explicit hide-read action, bottom clearance and tab scroll to top"
+  "Views/ReaderView.swift": "Native article-tools sheet; hide unsupported force-fetch in cloud mode; continuous read/extract/render status above content, reduced-motion-aware transitions and explicit render retry; right-edge left-swipe hint and open-original action sharing the external-link preference",
+  "Views/ReaderWebView.swift": "Generation-scoped visible-document loading callbacks; wait for initial layout before restoring position and crossfading; retain last snapshot on failure and reject stale completions; dedicated right-edge inward pan recognizer that leaves back and pull policies untouched",
+  "Views/SettingsView.swift": "Shared real-row preview, PWA density explanation, explicit hide-read action, bottom clearance and tab scroll to top",
+  "Services/ReaderHTML.swift": "Render server-downgraded video embeds as .media-link cards; preserve weidu-reader action links across the second sanitize pass; accept lazy-loaded and protocol-relative iframe sources",
+  "Services/ReaderMedia.swift": "Resolve protocol-relative media URLs explicitly so embedded players are not dropped"
 }

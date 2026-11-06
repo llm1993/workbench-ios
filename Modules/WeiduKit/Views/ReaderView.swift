@@ -26,6 +26,8 @@ struct ReaderView: View {
     @State private var turnRequest: ReaderTurnRequest?
     @State private var backOffset: CGFloat = 0
     @State private var isDismissing = false
+    @State private var originalDrag: CGFloat = 0
+    @State private var originalReady = false
     @State private var showAppearance = false
     @State private var showWorkspaceTools = false
     @State private var readingProgress: Double = 0
@@ -83,13 +85,7 @@ struct ReaderView: View {
                         videoPresentation = VideoPresentation(url: url)
                     }
                 },
-                onOpenExternal: { url in
-                    if store.settings.openInBrowser {
-                        store.openInAppBrowser(url)
-                    } else {
-                        UIApplication.shared.open(url)
-                    }
-                },
+                onOpenExternal: { openExternal($0) },
                 onBackDrag: { distance in
                     guard !isDismissing else { return }
                     backOffset = max(0, distance)
@@ -113,6 +109,20 @@ struct ReaderView: View {
                     } else {
                         withAnimation(.easeOut(duration: 0.22)) { backOffset = 0 }
                     }
+                },
+                onOriginalDrag: { distance in
+                    guard !isDismissing else { return }
+                    originalDrag = distance
+                    originalReady = ReaderEdgePolicy.isReady(distance: distance)
+                },
+                onOriginalEnd: { distance, velocityX, cancelled in
+                    let commit = !isDismissing &&
+                        ReaderEdgePolicy.shouldCommit(distance: distance, velocityX: velocityX, cancelled: cancelled)
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        originalDrag = 0
+                        originalReady = false
+                    }
+                    if commit { openOriginal(entry) }
                 },
                 onPullActive: { pullActive = $0 },
                 onProgress: { readingProgress = $0 },
@@ -141,6 +151,11 @@ struct ReaderView: View {
                     .transition(.opacity)
                     .allowsHitTesting(!pullActive)
             }
+
+            originalEdgeHint
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .padding(.trailing, 12)
+                .allowsHitTesting(false)
 
             // Keep one stable status view through the network-to-WebKit handoff.
             loadingOverlay
@@ -189,6 +204,43 @@ struct ReaderView: View {
             renderingArticleID = nil; renderFailure = nil
         }
         .onDisappear { renderingArticleID = nil; renderFailure = nil; displayedLoadingStage = nil }
+    }
+
+    private func openExternal(_ url: URL) {
+        if store.settings.openInBrowser {
+            store.openInAppBrowser(url)
+        } else {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    private func openOriginal(_ entry: Entry) {
+        guard let url = URL(string: entry.url),
+              ["http", "https"].contains(url.scheme?.lowercased() ?? "") else {
+            store.showBanner("这篇文章没有原文链接", isError: true)
+            return
+        }
+        openExternal(url)
+    }
+
+    private var originalEdgeHint: some View {
+        let ready = originalReady
+        let progress = min(1, originalDrag / ReaderEdgePolicy.commitDistance)
+        return HStack(spacing: 6) {
+            Image(systemName: ready ? "arrow.left.circle.fill" : "chevron.left")
+                .font(.system(size: 13, weight: .medium))
+            Text(ReaderEdgePolicy.hint(ready: ready))
+                .font(.system(size: 12.5, weight: .medium))
+        }
+        .foregroundStyle(ready ? Theme.accent : Theme.text2)
+        .padding(.horizontal, 13).padding(.vertical, 9)
+        .background(.ultraThinMaterial)
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(Theme.line, lineWidth: 0.5))
+        .offset(x: ReaderEdgePolicy.offset(distance: originalDrag))
+        .opacity(originalDrag > 0 ? min(1, 0.3 + progress * 0.7) : 0)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: ready)
+        .accessibilityHidden(true)
     }
 
     private func header(_ entry: Entry) -> some View {
