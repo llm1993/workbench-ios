@@ -14,6 +14,10 @@ final class Store: ObservableObject {
     private let cloudJournal: CloudJournal?
     private var cloudListTask: Task<Void, Never>?
     private var cloudFlushTask: Task<Void, Never>?
+    // Owns the detached-by-design refresh started from the article list. It is
+    // reserved synchronously so a second pull cannot start a duplicate request
+    // before isRefreshing flips on the next run-loop turn.
+    private var cloudSyncTask: Task<Void, Never>?
     private var cloudListRevision = UUID()
     private var cloudOpenRevision = UUID()
     private var cloudPagination = CloudListPagination()
@@ -331,9 +335,27 @@ final class Store: ObservableObject {
         await refreshAll(manual: false)
     }
 
-    func refreshCurrent() async {
-        if workspace != nil, case .feed(let id) = listScope { await refreshCloud(fetch: true, feedID: id) }
-        else { await refreshAll() }
+    /// 文章列表的「更新」。刻意立即返回：本机缓存已经上屏，网络同步在后台跑，
+    /// `.refreshable` 的 spinner 不必等 overview / 抓源完成才收起。
+    /// 只有 forceFetch 会让服务端串行重抓订阅源，且不受连拉节流限制。
+    func refreshCurrent(forceFetch: Bool = false) async {
+        guard cloudSyncTask == nil else { return }
+        guard ReaderSyncPolicy.allowsSync(last: lastCloudOverviewAt, now: Date(),
+                                         force: forceFetch) else { return }
+        cloudSyncTask = Task { [weak self] in
+            defer { self?.cloudSyncTask = nil }
+            guard let self else { return }
+            guard self.workspace != nil else {
+                await self.refreshAll()
+                return
+            }
+            if forceFetch {
+                if case .feed(let id) = self.listScope { await self.refreshCloud(fetch: true, feedID: id) }
+                else { await self.refreshCloud(fetch: true) }
+            } else {
+                await self.refreshCloud(fetch: false)
+            }
+        }
     }
 
     func refreshAll(manual: Bool = true) async {
@@ -996,6 +1018,39 @@ extension Store {
         if loadRemote { cloudListTask = Task { await cloudPage(append: false) } }
     }
 
+    /// Applies one already-fetched page. Shared by cursor paging and the
+    /// overview-parallel first page so both use the same chunked merge,
+    /// state-journal reconciliation and viewport-preserving append.
+    private func applyCloudRows(_ rows: [CloudValue], append: Bool, more: Bool,
+                                revision: UUID, stateVersion: Int) async throws {
+        var ids: [String] = []
+        // Short transactions avoid a disk commit per article. Yield
+        // between chunks so a page cannot occupy a frame for its entire
+        // merge. No transaction survives an await.
+        for start in stride(from: 0, to: rows.count, by: 16) {
+            try Task.checkCancellation(); guard cloudListRevision == revision else { return }
+            let chunk = Array(rows.dropFirst(start).prefix(16))
+            let pending = Dictionary(chunk.compactMap { item -> (String, CloudValue)? in
+                let id = Database.cloudID(item)
+                return cloudJournal?.state(id).map { (id, $0) }
+            }, uniquingKeysWith: { _, new in new })
+            ids.append(contentsOf: try database.mergeCloudList(chunk, pending: pending, preserveState: stateVersion != cloudStateVersion))
+            await Task.yield()
+        }
+        try Task.checkCancellation(); guard cloudListRevision == revision else { return }
+        cloudPagination.record(rows, requestRevision: stateVersion)
+        let metadata = Dictionary(uniqueKeysWithValues: database.listEntries(ids: ids).map { ($0.id, $0) })
+        var seen = append ? Set(entries.map(\.id)) : Set<String>()
+        let next = ids.filter { seen.insert($0).inserted && !hiddenReadIDs.contains($0) }.compactMap { metadata[$0] }
+        // Preserve existing row order and IDs. Appending cannot move the
+        // viewport, including when new server articles overlap this page.
+        let updated = append ? entries + next : next
+        if entries != updated { entries = updated }
+        hasMore = more && !rows.isEmpty
+        cursor = entries.last.map { ($0.sortTime, $0.id) }
+        prepareReaderNeighbors()
+    }
+
     private func cloudPage(append: Bool) async {
         // A task cancelled before it starts must not claim the replacement
         // list's revision or clear that list's loading reservation in defer.
@@ -1009,35 +1064,13 @@ extension Store {
             // Fetch only the next page, as PWA does. Confirmed read/unstar ACKs
             // adjust the offset so those removals do not skip unseen articles.
             let offset = append ? cloudPagination.offset(unreadOnly: listIsUnreadOnly, starredOnly: listScope == .starred) : 0
-            var ids: [String] = []
             let stateVersion = cloudStateVersion
             let result = try await workspace.request(cloudQuery(limit: pageSize, offset: offset))
             try Task.checkCancellation(); guard cloudListRevision == revision else { return }
-            let rows = result["items"].array
-            // Short transactions avoid a disk commit per article. Yield
-            // between chunks so a page cannot occupy a frame for its entire
-            // merge. No transaction survives an await.
-            for start in stride(from: 0, to: rows.count, by: 16) {
-                try Task.checkCancellation(); guard cloudListRevision == revision else { return }
-                let chunk = Array(rows.dropFirst(start).prefix(16))
-                let pending = Dictionary(chunk.compactMap { item -> (String, CloudValue)? in
-                    let id = Database.cloudID(item)
-                    return cloudJournal?.state(id).map { (id, $0) }
-                }, uniquingKeysWith: { _, new in new })
-                ids.append(contentsOf: try database.mergeCloudList(chunk, pending: pending, preserveState: stateVersion != cloudStateVersion))
-                await Task.yield()
-            }
-            try Task.checkCancellation(); guard cloudListRevision == revision else { return }
-            cloudPagination.record(rows, requestRevision: stateVersion)
-            let metadata = Dictionary(uniqueKeysWithValues: database.listEntries(ids: ids).map { ($0.id, $0) })
-            var seen = append ? Set(entries.map(\.id)) : Set<String>()
-            let next = ids.filter { seen.insert($0).inserted && !hiddenReadIDs.contains($0) }.compactMap { metadata[$0] }
-            // Preserve existing row order and IDs. Appending cannot move the
-            // viewport, including when new server articles overlap this page.
-            let updated = append ? entries + next : next
-            if entries != updated { entries = updated }
-            hasMore = result["has_more"].flag && !rows.isEmpty; cloudOffline = false; listPageError = nil
-            cursor = entries.last.map { ($0.sortTime, $0.id) }; prepareReaderNeighbors()
+            try await applyCloudRows(result["items"].array, append: append,
+                                     more: result["has_more"].flag,
+                                     revision: revision, stateVersion: stateVersion)
+            cloudOffline = false; listPageError = nil
         } catch is CancellationError { }
         catch {
             guard cloudListRevision == revision else { return }
@@ -1047,12 +1080,33 @@ extension Store {
         }
     }
 
+    /// Applies the first page fetched in parallel with overview. The local
+    /// cache goes on screen first; a fresh revision keeps a stale paging task
+    /// from replacing it later.
+    private func applyParallelFirstPage(_ page: CloudValue, stateVersion: Int) async {
+        reloadCloudList(loadRemote: false)
+        let revision = cloudListRevision
+        do {
+            try await applyCloudRows(page["items"].array, append: false,
+                                     more: page["has_more"].flag,
+                                     revision: revision, stateVersion: stateVersion)
+            cloudOffline = false; listPageError = nil
+        } catch is CancellationError { }
+        catch {
+            cloudOffline = true
+            showBanner("云端暂不可用，正在显示本机缓存：" + error.localizedDescription, isError: true)
+        }
+    }
+
     func refreshCloud(fetch: Bool, feedID: String? = nil, preservingList: Bool = false) async {
         guard let workspace, !isRefreshing else { return }
-        preservingListDuringSync = preservingList && cloudPagination.hasLoadedPage
+        // A lightweight sync must not freeze pagination: rows are already on
+        // screen and only overview/first page are in flight.
+        preservingListDuringSync = cloudPagination.hasLoadedPage && (preservingList || !fetch)
         isRefreshing = true
         defer { isRefreshing = false; preservingListDuringSync = false }
         await flushCloudJournal()
+        var listRequest: Task<CloudValue?, Never>?
         do {
             var resultMessage: String?, failed = false
             if fetch, let feedID {
@@ -1074,8 +1128,23 @@ extension Store {
                 failed = response["failed"].int > 0
                 resultMessage = "新增 \(response["added"].int) 篇文章" + (failed ? "，\(response["failed"].int) 个源失败：" + response["failures"].array.map(\.text).joined(separator: "；") : "")
             }
+            // Both requests are in flight together. Start the list only after a
+            // forced fetch, so overview and the page see the same DB state. The
+            // page is applied *after* mergeCloudFeeds: listEntries JOINs feeds,
+            // so applying it earlier would drop rows from new subscriptions.
             let version = cloudStateVersion
+            let skipListRequest = preservingList && cloudPagination.hasLoadedPage
+            let queryBefore: String? = skipListRequest ? nil : cloudQuery(limit: pageSize, offset: 0)
+            let pageStateVersion = cloudStateVersion
+            listRequest = queryBefore.map { query in
+                Task { [weak self] () -> CloudValue? in
+                    guard let self, let workspace = self.workspace else { return nil }
+                    return try? await workspace.request(query)
+                }
+            }
             let result = try await workspace.request("/api/weidu/overview")
+            var page: CloudValue?
+            if let listRequest { page = await listRequest.value }
             try Task.checkCancellation()
             try database.mergeCloudFeeds(result["feeds"].array)
             cloudFeedTotals = Dictionary(uniqueKeysWithValues: result["feeds"].array.map { ($0["id"].text, $0["total"].int) })
@@ -1095,11 +1164,24 @@ extension Store {
             if version == cloudStateVersion, !keepList { applyCloudPreferences(result["prefs"]) }
             reloadFeeds(); lastRefreshAt = Date(); cloudOffline = false
             lastCloudOverviewAt = Date()
-            if !keepList { reloadList() }
+            // A remote preference, a removed feed or a filtered selection can
+            // change the query. Discard the parallel page in that case.
+            let queryAfter: String? = skipListRequest ? nil : cloudQuery(limit: pageSize, offset: 0)
+            if skipListRequest {
+                if scopeRemoved { reloadList() }
+            } else if scopeRemoved || queryBefore != queryAfter {
+                reloadList()
+            } else if let page {
+                await applyParallelFirstPage(page, stateVersion: pageStateVersion)
+            } else {
+                reloadList()
+            }
             pendingCloudWrites = cloudJournal?.operations.count ?? 0
             if let resultMessage { showBanner(resultMessage, isError: failed) }
-        } catch is CancellationError { }
-        catch {
+        } catch is CancellationError {
+            listRequest?.cancel()
+        } catch {
+            listRequest?.cancel()
             if !preservingList || !cloudPagination.hasLoadedPage { cloudOffline = true }
             showBanner("同步未完成，已保留本机内容：" + error.localizedDescription, isError: true)
         }

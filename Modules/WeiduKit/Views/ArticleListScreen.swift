@@ -156,6 +156,12 @@ struct ArticleListScreen: View {
                     Button {
                         Task { await store.refreshCurrent() }
                     } label: { Label("更新文章", systemImage: "arrow.clockwise") }
+                    Divider()
+                    // 下拉和「更新文章」只同步服务端已有内容；真正让服务端
+                    // 逐个访问订阅源的重操作留在这里，由用户明确发起。
+                    Button {
+                        Task { await store.refreshCurrent(forceFetch: true) }
+                    } label: { Label("重新抓取订阅（较慢）", systemImage: "arrow.triangle.2.circlepath") }
                     if store.listIsUnreadOnly {
                         Button { store.clearReadFromList() } label: {
                             Label("隐藏已读文章", systemImage: "checkmark.circle")

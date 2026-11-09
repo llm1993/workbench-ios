@@ -36,10 +36,11 @@ source_manifest = json.loads((root / 'Modules/weidu-source.json').read_text(enco
 source_hashes = {f['path']: f['sha256'] for f in source_manifest['files']}
 
 # 对「相对基线改过的文件」，SHA 判据不适用。下面这些是删除基线仓库前实测过的
-# tree_sitter_swift 解析局限：四项（路径/行号/节点类型/该行文本）全匹配才豁免，
-# 改动那一行或换解析器版本都会让它重新变成 failure，不会掩盖新错误。
+# tree_sitter_swift 解析局限：三项（路径/节点类型/该行文本）全匹配才豁免。
+# 刻意不带行号 —— 上面插几行菜单代码就会让行号漂移，豁免跟着失效是假失败；
+# 改动那一行文本或换解析器版本仍会让它重新变成 failure，不掩盖新错误。
 UPSTREAM_PARSER_LIMITATIONS = {
-    ("Modules/WeiduKit/Views/ArticleListScreen.swift", 590, "!", "self.sweepRead.send(())"),
+    ("Modules/WeiduKit/Views/ArticleListScreen.swift", "!", "self.sweepRead.send(())"),
 }
 
 def nodes(tree):
@@ -74,7 +75,7 @@ for path in files:
                 # 与基线 SHA 一致 ⇒ 这个解析错误本来就在上游源码里，不是本次改动引入的。
                 known.append((rel,error.start_point.row+1))
                 continue
-        note = (rel, error.start_point.row+1, error.type,
+        note = (rel, error.type,
                 raw.splitlines()[error.start_point.row].strip().decode('utf-8', 'replace'))
         if note in UPSTREAM_PARSER_LIMITATIONS:
             known.append((rel, error.start_point.row+1))
