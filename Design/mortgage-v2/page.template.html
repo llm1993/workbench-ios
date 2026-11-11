@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>房贷 · iOS 新版界面预览</title>
+<style>/* STYLES */</style>
+</head>
+<body>
+<svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></symbol>
+<symbol id="calc" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M8 7h8M8 11h1m6 0h1m-8 4h1m6 0h1m-8 3h1m6 0h1"/></symbol>
+<symbol id="wallet" viewBox="0 0 24 24"><path d="M4 7V5a2 2 0 0 1 2-2h12v4M4 7h16v14H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm16 5h-5v5h5m-2-2.5h.1"/></symbol>
+<symbol id="folder" viewBox="0 0 24 24"><path d="M3 7V5h7l2 3h9v12H3Z"/></symbol>
+<symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+<symbol id="sliders" viewBox="0 0 24 24"><path d="M3 6h4m4 0h10M3 12h10m4 0h4M3 18h4m4 0h10M7 3v6m10 0v6M7 15v6"/></symbol>
+<symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+<symbol id="compare" viewBox="0 0 24 24"><path d="M3 7h17m-4-4 4 4-4 4M21 17H4m4-4-4 4 4 4"/></symbol>
+<symbol id="doc" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6ZM14 3v5h5M9 12h7m-7 4h7"/></symbol>
+</defs></svg>
+<div class="preview-tools"><span>iOS 界面预览 · 示例数据</span><div><button type="button" id="theme-toggle" aria-pressed="false">深色</button><button type="button" id="text-toggle" aria-pressed="false">大字号</button></div></div>
+<div class="phone" id="phone">
+  <div class="status-bar" aria-hidden="true"><strong>9:41</strong><span>▴ ▰ ▰</span></div>
+  <header class="app-toolbar"><span class="toolbar-icon" aria-hidden="true"><svg><use href="#grid"/></svg></span><span>房贷计算器</span><button type="button" id="plans-button"><svg><use href="#folder"/></svg>方案</button></header>
+  <main class="app-scroll" id="app-scroll">
+    <div class="page-heading"><div><h1 id="scene-title">买房试算</h1><span class="draft-badge"><svg><use href="#doc"/></svg><span id="draft-label">本机草稿</span></span></div><p id="scene-subtitle">算清每月开支，从容计划一个家。</p></div>
+    <p class="error" id="error" role="alert" hidden></p>
+    <section class="summary panel" aria-label="还款测算结果" aria-live="polite">
+      <div class="payment-caption"><span id="payment-title">预计每月还款</span><span class="pill" id="payment-badge">每月固定</span></div>
+      <div class="monthly"><span>¥</span><strong id="monthly-value">8,910.41</strong></div>
+      <p class="meta" id="payment-meta">商业贷款 / 210 万元 / 30 年 / 年利率 3.05%</p>
+      <div id="cost-share"><div class="cost-bar" role="img" id="cost-bar"><span id="principal-bar"></span><span></span></div><div class="bar-labels"><span id="principal-ratio"></span><span id="interest-ratio"></span></div></div>
+      <div class="metrics" id="metrics"></div>
+      <button class="insight" type="button" id="compare-button"><svg><use href="#compare"/></svg><span><span id="insight-text"></span><strong id="compare-label">对比还款方式</strong></span><span aria-hidden="true">›</span></button>
+    </section>
+    <section class="panel parameters">
+      <button class="parameter-toggle" type="button" id="parameter-toggle" aria-expanded="false"><strong><svg><use href="#sliders"/></svg><span id="parameters-title">贷款参数</span></strong><span class="pill" id="parameter-action">修改⌄</span></button>
+      <div class="quick-facts" id="quick-facts"></div>
+      <form id="parameter-form" hidden novalidate>
+        <div class="form-fields" id="form-fields"></div>
+        <button class="primary" type="button" id="collapse-button">完成设置</button>
+        <p class="form-caption">修改即计算 · 此预览使用独立的示例数据</p>
+      </form>
+    </section>
+    <section class="panel progress-panel" id="progress-panel" hidden></section>
+    <section class="panel chart-panel"><div class="chart-heading"><h2 id="chart-title">本金还款走势</h2><button class="pill" type="button" id="schedule-button">还款明细 ›</button></div><p class="chart-subtitle" id="chart-subtitle">两种还款方式的剩余本金变化</p><div class="legend" id="legend"></div><svg class="plot" id="plot" viewBox="0 0 310 190" role="img" aria-label="剩余本金随期数变化"></svg><p class="chart-hint">按期计算，查看本金逐步还清的过程</p><div class="chart-footer"><span>单位：万元</span><button type="button" id="chart-data-button">查看数据 ›</button></div></section>
+    <button class="invitation" type="button" id="invitation"><span class="invitation-icon" aria-hidden="true">↗</span><span><strong>提前还一笔，能省多少？</strong><span id="invitation-copy"></span><b>算算能省多少 →</b></span></button>
+    <footer>按月计息，结果仅供参考。实际还款以银行合同、计息规则及审批为准。<br><span id="rates-date"></span></footer>
+  </main>
+  <nav class="bottom-nav" aria-label="房贷功能导航">
+    <button type="button" data-scene="trial" aria-pressed="true"><svg><use href="#calc"/></svg><span>买房试算</span></button>
+    <button type="button" data-scene="current" aria-pressed="false"><svg><use href="#home"/></svg><span>我的房贷</span></button>
+    <button type="button" data-scene="prepayment" aria-pressed="false"><svg><use href="#wallet"/></svg><span>提前还款</span></button>
+  </nav>
+  <div class="home-indicator" aria-hidden="true"><span></span></div>
+  <dialog id="sheet"><div class="sheet-header"><h2 id="sheet-title"></h2><button type="button" id="close-sheet">完成</button></div><div class="sheet-content" id="sheet-content"></div></dialog>
+</div>
+<p class="preview-note">原生界面设计预览，非 iOS 模拟器截图。正式 App 的合同编辑、云端方案与历史记录仍使用原有功能。</p>
+<script>/* CALC */</script><script>/* RATES */</script><script>/* BRIDGE */</script><script>/* INTERACTION */</script>
+</body></html>

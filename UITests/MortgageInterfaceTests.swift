@@ -19,7 +19,7 @@ final class MortgageInterfaceTests: XCTestCase {
     }
     private func top(_ app: XCUIApplication) {
         for _ in 0..<12 {
-            if app.buttons["mortgage-scene-trial"].isHittable { return }
+            if app.staticTexts["mortgage-monthly-payment"].isHittable { return }
             app.scrollViews["mortgage-scroll"].swipeDown()
         }
     }
@@ -108,5 +108,21 @@ final class MortgageInterfaceTests: XCTestCase {
         let current = app.buttons["mortgage-scene-current"]
         reveal(current, app: app); current.tap()
         XCTAssertTrue(app.buttons["mortgage-input-toggle"].waitForExistence(timeout: 5))
+    }
+    func testBottomNavigationStaysReachableAndChangesSceneAtTop() {
+        let app = launch()
+        let table = app.buttons["mortgage-chart-data"]
+        reveal(table, app: app)
+        XCTAssertTrue(app.buttons["mortgage-scene-trial"].isHittable)
+        XCTAssertTrue(app.buttons["mortgage-scene-current"].isHittable)
+        XCTAssertTrue(app.buttons["mortgage-scene-prepayment"].isHittable)
+        app.buttons["mortgage-scene-prepayment"].tap()
+        let payment = app.staticTexts["mortgage-monthly-payment"]
+        XCTAssertTrue(payment.waitForExistence(timeout: 5))
+        XCTAssertTrue(payment.isHittable, "Switching the bottom navigation must bring the new scene to its summary")
+        app.buttons["mortgage-scene-trial"].tap()
+        XCTAssertTrue(app.buttons["mortgage-scene-trial"].isSelected)
+        XCTAssertTrue(app.staticTexts["mortgage-monthly-payment"].isHittable)
+        capture(app, "mortgage-bottom-navigation")
     }
 }

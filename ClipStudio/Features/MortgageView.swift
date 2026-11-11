@@ -64,37 +64,40 @@ struct MortgageView: View {
     private var needsInputs: Bool { inputsExpanded || calculation.isNull || (isPrepayment && !presentation.hasPrepayment) }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                pageHeader
-                sceneTabs
-                if let failure { NativeFailure(message: failure).accessibilityIdentifier("mortgage-failure") }
-                if !calculation.isNull && (!isPrepayment || presentation.hasPrepayment) {
-                    MortgageSummaryCard(presentation: presentation, actionTitle: isPrepayment ? "比较两种还法" : kind == "new" ? "对比还款方式" : "查看还款计划") {
-                        detailSheet = isPrepayment ? .strategies : kind == "new" ? .methods : .schedule
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    pageHeader.id("mortgage-top")
+                    if let failure { NativeFailure(message: failure).accessibilityIdentifier("mortgage-failure") }
+                    if !calculation.isNull && (!isPrepayment || presentation.hasPrepayment) {
+                        MortgageSummaryCard(presentation: presentation, actionTitle: isPrepayment ? "比较两种还法" : kind == "new" ? "对比还款方式" : "查看还款计划") {
+                            detailSheet = isPrepayment ? .strategies : kind == "new" ? .methods : .schedule
+                        }
+                    } else {
+                        MortgagePanel {
+                            Label(isPrepayment ? "先设置这笔提前还款" : "先把贷款参数填完整", systemImage: isPrepayment ? "wallet.bifold" : "slider.horizontal.3").font(.headline)
+                            Text(isPrepayment ? "选择时间、金额和还款方式，再看月供与利息会怎样变化。" : "计算在本机完成。正在还的房贷，请照着合同和银行 App 填写。")
+                                .font(.subheadline).foregroundStyle(MortgageStyle.secondary)
+                        }
                     }
-                } else {
-                    MortgagePanel {
-                        Label(isPrepayment ? "先设置这笔提前还款" : "先把贷款参数填完整", systemImage: isPrepayment ? "wallet.bifold" : "slider.horizontal.3").font(.headline)
-                        Text(isPrepayment ? "选择时间、金额和还款方式，再看月供与利息会怎样变化。" : "计算在本机完成。正在还的房贷，请照着合同和银行 App 填写。")
-                            .font(.subheadline).foregroundStyle(MortgageStyle.secondary)
+                    inputsCard
+                    if !calculation.isNull && (!isPrepayment || presentation.hasPrepayment) {
+                        if scene == .current { currentOverview }
+                        MortgageBalanceChart(series: presentation.chartSeries, months: presentation.chartMonths,
+                                             title: isPrepayment ? "提前还款前后" : "本金还款走势",
+                                             subtitle: isPrepayment ? "原计划与提前还款后的剩余本金" : kind == "new" ? "两种还款方式的剩余本金变化" : "未来利率按现有利率表推算",
+                                             schedule: { detailSheet = .schedule }, showData: { detailSheet = .chartData })
+                        if !isPrepayment { prepaymentInvitation }
                     }
-                }
-                inputsCard
-                if !calculation.isNull && (!isPrepayment || presentation.hasPrepayment) {
-                    MortgageBalanceChart(series: presentation.chartSeries, months: presentation.chartMonths,
-                                         title: isPrepayment ? "提前还一笔，变化看得见" : kind == "new" ? "离还清，越来越近" : "未来本金还款走势",
-                                         subtitle: isPrepayment ? "原计划与提前还款后的剩余本金" : kind == "new" ? "两种还款方式的剩余本金变化" : "未来利率按现有利率表推算",
-                                         schedule: { detailSheet = .schedule }, showData: { detailSheet = .chartData })
-                    if scene == .current { currentOverview }
-                    if scene == .trial { prepaymentInvitation }
-                }
-                footer
-            }.frame(maxWidth: 700).padding(.horizontal, 18).padding(.vertical, 22).frame(maxWidth: .infinity)
-        }.accessibilityIdentifier("mortgage-scroll")
-            .scrollDismissesKeyboard(.interactively).disabled(busy)
+                    footer
+                }.frame(maxWidth: 700).padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 26).frame(maxWidth: .infinity)
+            }.accessibilityIdentifier("mortgage-scroll")
+                .scrollDismissesKeyboard(.interactively)
+                .onChange(of: scene) { _, _ in proxy.scrollTo("mortgage-top", anchor: .top) }
+        }.safeAreaInset(edge: .bottom, spacing: 0) { sceneTabs }
+            .disabled(busy)
             .background(MortgageStyle.background.ignoresSafeArea()).foregroundStyle(MortgageStyle.text).tint(MortgageStyle.accent)
-            .navigationTitle("房贷").toolbarBackground(MortgageStyle.surface, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
+            .navigationTitle("房贷计算器").toolbarBackground(MortgageStyle.background, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { planMenu.disabled(busy) }
                 ToolbarItemGroup(placement: .keyboard) {
@@ -140,32 +143,59 @@ struct MortgageView: View {
             .onChange(of: phase) { _, value in if value != .active { saveLocal() } }
     }
     private var pageHeader: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text(scene.headline).font(.title2.weight(.bold)).accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: 10) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { sceneTitle.fixedSize(); Spacer(minLength: 0); draftStatus.fixedSize() }
+                VStack(alignment: .leading, spacing: 10) { sceneTitle; draftStatus }
+            }
             Text(scene.subtitle).font(.subheadline).foregroundStyle(MortgageStyle.secondary)
-            HStack(spacing: 6) {
-                Image(systemName: selected.isNull ? "doc.text" : "icloud")
-                Text(selected.isNull ? "本机草稿" : selected["name"].text)
-                if !selected.isNull { Text(dirty ? "有修改未存云端" : "已存云端").foregroundStyle(MortgageStyle.secondary) }
-                Spacer(minLength: 0)
-                if busy { ProgressView().controlSize(.small) }
-            }.font(.caption).padding(.top, 4).accessibilityElement(children: .combine)
-        }
+            if !selected.isNull { cloudStatus }
+        }.padding(.vertical, 8)
+    }
+    private var sceneTitle: some View {
+        Text(scene.title).font(.largeTitle.weight(.semibold)).tracking(-0.8).fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+    }
+    private var draftStatus: some View {
+        HStack(spacing: 6) {
+            Image(systemName: selected.isNull ? "doc.text" : "icloud").accessibilityHidden(true)
+            Text(selected.isNull ? "本机草稿" : selected["name"].text).lineLimit(1).truncationMode(.middle)
+            if busy { ProgressView().controlSize(.small) }
+        }.font(.caption).foregroundStyle(MortgageStyle.accent).padding(.horizontal, 10).padding(.vertical, 6)
+            .background(MortgageStyle.tint, in: Capsule()).accessibilityElement(children: .combine)
+    }
+    private var cloudStatus: some View {
+        Text(dirty ? "有修改未存云端" : "已存云端").font(.caption).foregroundStyle(MortgageStyle.secondary)
     }
     private var sceneTabs: some View {
         Group {
-            if typeSize.isAccessibilitySize { VStack(spacing: 0) { sceneButtons } }
-            else { HStack(spacing: 0) { sceneButtons } }
-        }.padding(4).background(MortgageStyle.surface, in: RoundedRectangle(cornerRadius: 13))
+            if typeSize.isAccessibilitySize { VStack(spacing: 4) { sceneButtons } }
+            else { HStack(spacing: 6) { sceneButtons } }
+        }.frame(maxWidth: 700).padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 8).frame(maxWidth: .infinity)
+            .background {
+                MortgageStyle.surface.ignoresSafeArea(edges: .bottom)
+                    .overlay(alignment: .top) { Rectangle().fill(MortgageStyle.line).frame(height: 0.7) }
+            }
+            .accessibilityElement(children: .contain).accessibilityLabel("房贷功能导航")
+            .accessibilityIdentifier("mortgage-navigation")
     }
     private var sceneButtons: some View {
         ForEach(MortgageScene.allCases) { item in
             Button { changeScene(item) } label: {
-                Label(item.title, systemImage: item.symbol).font(.subheadline.weight(scene == item ? .semibold : .regular))
-                    .frame(maxWidth: .infinity, minHeight: 46)
+                Group {
+                    if typeSize.isAccessibilitySize {
+                        Label(item.title, systemImage: scene == item ? item.selectedSymbol : item.symbol)
+                            .font(.subheadline.weight(scene == item ? .semibold : .regular))
+                    } else {
+                        VStack(spacing: 5) {
+                            Image(systemName: scene == item ? item.selectedSymbol : item.symbol).font(.system(size: 20, weight: .medium))
+                            Text(item.title).font(.caption.weight(scene == item ? .semibold : .regular))
+                        }
+                    }
+                }.frame(maxWidth: .infinity, minHeight: typeSize.isAccessibilitySize ? 50 : 56).padding(.vertical, 4)
                     .foregroundStyle(scene == item ? MortgageStyle.accent : MortgageStyle.secondary)
-                    .background(scene == item ? MortgageStyle.tint : .clear, in: RoundedRectangle(cornerRadius: 10))
-            }.buttonStyle(.plain).accessibilityAddTraits(scene == item ? .isSelected : [])
+                    .background(scene == item ? MortgageStyle.tint : .clear, in: RoundedRectangle(cornerRadius: 16))
+                    .contentShape(Rectangle())
+            }.buttonStyle(.plain).accessibilityLabel(item.title).accessibilityAddTraits(scene == item ? .isSelected : [])
                 .accessibilityIdentifier("mortgage-scene-" + item.rawValue)
         }
     }
@@ -188,16 +218,23 @@ struct MortgageView: View {
     private var inputsCard: some View {
         MortgagePanel {
             Button { inputsExpanded.toggle() } label: {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(isPrepayment ? "提前还款设置" : kind == "current" ? "贷款合同" : "贷款").font(.headline)
-                        if !needsInputs {
-                            Text(kind == "new" ? "\(MortgageDisplay.wan(calculation["total"])) 万元 / \(draft["years"].text) 年 / \(MortgageDisplay.method(draft["method"]))" : "\(draft["parts"].array.count) 笔合同，点此调整")
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 12) {
+                        Label(isPrepayment ? "提前还款设置" : kind == "current" ? "贷款合同" : "贷款参数", systemImage: "slider.horizontal.3").font(.headline)
+                        Spacer(minLength: 0)
+                        Label(needsInputs ? "收起" : "修改", systemImage: needsInputs ? "chevron.up" : "chevron.down")
+                            .font(.caption.weight(.medium)).foregroundStyle(MortgageStyle.accent)
+                            .padding(.horizontal, 10).padding(.vertical, 7).background(MortgageStyle.tint, in: Capsule())
+                    }
+                    if !needsInputs {
+                        if kind == "new" && !isPrepayment {
+                            if typeSize.isAccessibilitySize { VStack(alignment: .leading, spacing: 12) { parameterFacts } }
+                            else { HStack(spacing: 12) { parameterFacts } }
+                        } else {
+                            Text(kind == "current" ? "\(draft["parts"].array.count) 笔合同 · 历史调整与还款记录" : "沿用当前贷款，调整提前还款金额和时间")
                                 .font(.caption).foregroundStyle(MortgageStyle.secondary)
                         }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                    Image(systemName: needsInputs ? "chevron.up" : "slider.horizontal.3").font(.subheadline)
-                        .frame(width: 38, height: 38).background(MortgageStyle.tint, in: RoundedRectangle(cornerRadius: 10))
+                    }
                 }.frame(minHeight: 44).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityIdentifier("mortgage-input-toggle").accessibilityValue(needsInputs ? "已展开" : "已收起")
             if needsInputs {
@@ -208,12 +245,24 @@ struct MortgageView: View {
                 Button { beginSave(asNew: false) } label: {
                     Label("保存到云端", systemImage: "icloud.and.arrow.up").font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 48)
-                        .background(MortgageStyle.hero, in: RoundedRectangle(cornerRadius: 11))
+                        .background(MortgageStyle.hero, in: RoundedRectangle(cornerRadius: 15))
                 }.buttonStyle(.plain).accessibilityIdentifier("mortgage-save")
                 Text("修改即计算，本机草稿与云端方案分开保存。")
                     .font(.caption).foregroundStyle(MortgageStyle.secondary)
             }
         }
+    }
+    private var parameterFacts: some View {
+        Group {
+            MortgageQuickFact(title: "贷款金额", value: MortgageDisplay.wan(calculation["total"]) + " 万")
+            MortgageQuickFact(title: "贷款年限", value: draft["years"].text + " 年")
+            MortgageQuickFact(title: draft["type"].text == "combo" ? "贷款类型" : "年利率", value: trialRateSummary)
+        }
+    }
+    private var trialRateSummary: String {
+        if draft["type"].text == "combo" { return "组合贷款" }
+        let rate = draft["type"].text == "fund" ? draft["fundRate"].double : draft["lpr"].double + draft["bp"].double / 100
+        return MortgageDisplay.number(rate) + "%"
     }
     private var prepaymentInputs: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -335,24 +384,25 @@ struct MortgageView: View {
     private var prepaymentInvitation: some View {
         Button { changeScene(.prepayment) } label: {
             HStack(alignment: .top, spacing: 13) {
-                Image(systemName: "wallet.bifold").font(.title3).frame(width: 40, height: 40).background(MortgageStyle.surface, in: RoundedRectangle(cornerRadius: 11))
+                Image(systemName: "arrow.up.forward.circle.fill").font(.system(size: 30, weight: .regular)).foregroundStyle(MortgageStyle.accent).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 7) {
-                    Text("手头有余钱，提前还一笔？").font(.subheadline.weight(.semibold))
+                    Text("提前还一笔，能省多少？").font(.subheadline.weight(.semibold))
                     Text(presentation.hasPrepayment ? "按当前提前还款设置，缩短年限可少付 \(MortgageDisplay.wan(presentation.savedInterest(for: "term"))) 万元利息。" : "选个时间和金额，看看利息能少多少。")
                         .font(.caption).foregroundStyle(MortgageStyle.secondary)
                     Label("算算能省多少", systemImage: "arrow.right").font(.caption.weight(.semibold))
                 }.frame(maxWidth: .infinity, alignment: .leading)
-            }.padding(18).background(MortgageStyle.tint, in: RoundedRectangle(cornerRadius: 15))
+            }.padding(20).background(MortgageStyle.tint, in: RoundedRectangle(cornerRadius: 22))
         }.buttonStyle(.plain).accessibilityIdentifier("mortgage-prepay-invitation")
     }
     private var footer: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("按月计息，结果仅供参考。实际还款以银行合同、计息规则及审批为准。", systemImage: "info.circle")
             if !calculation["asOf"].text.isEmpty { Text("默认利率表截至 \(calculation["asOf"].text)，非实时报价，可手动修改。") }
-            Button("计算口径与说明") { detailSheet = .about }.frame(minHeight: 36)
+            Button("计算口径与说明") { detailSheet = .about }.frame(minHeight: 44)
         }.font(.caption).foregroundStyle(MortgageStyle.secondary).padding(.horizontal, 3)
     }
     private func changeScene(_ next: MortgageScene) {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         scene = next
         if next == .trial { changeKind("new") }
         else if next == .current { changeKind("current") }

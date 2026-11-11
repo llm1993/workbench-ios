@@ -9,14 +9,14 @@ enum MortgageScene: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self { case .trial: return "calculator"; case .current: return "house"; case .prepayment: return "wallet.bifold" }
     }
-    var headline: String {
-        switch self { case .trial: return "一笔房贷，心里有数。"; case .current: return "还到哪了，一目了然。"; case .prepayment: return "提前一步，少一点利息。" }
+    var selectedSymbol: String {
+        switch self { case .trial: return "calculator.fill"; case .current: return "house.fill"; case .prepayment: return "wallet.bifold.fill" }
     }
     var subtitle: String {
         switch self {
-        case .trial: return "月供、利息、还款方式，放在一起看明白。"
+        case .trial: return "算清每月开支，从容计划一个家。"
         case .current: return "从放款到结清，看清你的还款进度。"
-        case .prepayment: return "缩短年限，还是减少月供？放在一起算一算。"
+        case .prepayment: return "少付多少利息，早多久还清。"
         }
     }
 }
