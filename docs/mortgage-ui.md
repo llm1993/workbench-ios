@@ -68,7 +68,7 @@ python scripts/check-reader-cache.py
 
 新增 `Tests/MortgagePresentationTests.swift` 覆盖选中还法、提前还款后月供、提前结清、组合贷缩短口径、立即还款汇总与图表起点、空数据等情况。新增 `UITests/MortgageInterfaceTests.swift` 覆盖三个场景的入口、方式/策略比较、参数展开、图表数据、明细、深色与大字号，并附 XCTest 截图。
 
-原生编译、XCTest、UI 截图与真机验收需要 macOS/Xcode。Windows 上的语法和协议检查不等于 Swift 类型检查或界面验收。本次没有自动触发手动构建工作流，也没有生成 IPA。
+原生编译、XCTest、UI 截图需要 macOS/Xcode；物理设备验收另行进行。Windows 上的语法和协议检查不等于 Swift 类型检查或界面验收。云端完整验证使用手动 `iOS Build` 的 `full` 模式，成功后生成未签名 IPA 和原生截图，并记录 `validation-summary.json`。
 
 在 macOS 上先执行 `xcodegen generate`，再将下面的 `<UDID>` 替换为可用模拟器：
 

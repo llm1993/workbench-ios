@@ -1,7 +1,14 @@
 import XCTest
+import UIKit
 @testable import ClipStudio
 
 final class MortgagePresentationTests: XCTestCase {
+    @MainActor func testSceneIconsExistInTheSystemSymbolCatalog() {
+        for scene in MortgageScene.allCases {
+            XCTAssertNotNil(UIImage(systemName: scene.symbol), "Missing navigation symbol: \(scene.symbol)")
+            XCTAssertNotNil(UIImage(systemName: scene.selectedSymbol), "Missing selected symbol: \(scene.selectedSymbol)")
+        }
+    }
     @MainActor func testTrialSummaryUsesSelectedRepaymentMethod() throws {
         let engine = try MortgageEngine()
         var draft = try engine.call("defaults")["new"]

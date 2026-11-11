@@ -7,10 +7,10 @@ enum MortgageScene: String, CaseIterable, Identifiable {
         switch self { case .trial: return "买房试算"; case .current: return "我的房贷"; case .prepayment: return "提前还款" }
     }
     var symbol: String {
-        switch self { case .trial: return "calculator"; case .current: return "house"; case .prepayment: return "wallet.bifold" }
+        switch self { case .trial: return "plus.forwardslash.minus"; case .current: return "house"; case .prepayment: return "wallet.bifold" }
     }
     var selectedSymbol: String {
-        switch self { case .trial: return "calculator.fill"; case .current: return "house.fill"; case .prepayment: return "wallet.bifold.fill" }
+        switch self { case .trial: return "plus.forwardslash.minus"; case .current: return "house.fill"; case .prepayment: return "wallet.bifold.fill" }
     }
     var subtitle: String {
         switch self {
