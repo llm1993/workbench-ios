@@ -104,7 +104,6 @@ final class MortgageInterfaceTests: XCTestCase {
         reveal(amount, app: app)
         XCTAssertTrue(amount.isHittable)
         capture(app, "mortgage-accessibility-text")
-        top(app)
         let current = app.buttons["mortgage-scene-current"]
         reveal(current, app: app); current.tap()
         XCTAssertTrue(app.buttons["mortgage-input-toggle"].waitForExistence(timeout: 5))
@@ -119,7 +118,10 @@ final class MortgageInterfaceTests: XCTestCase {
         app.buttons["mortgage-scene-prepayment"].tap()
         let payment = app.staticTexts["mortgage-monthly-payment"]
         XCTAssertTrue(payment.waitForExistence(timeout: 5))
-        XCTAssertTrue(payment.isHittable, "Switching the bottom navigation must bring the new scene to its summary")
+        let visible = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in payment.isHittable }, object: nil)
+        let visibility = XCTWaiter.wait(for: [visible], timeout: 5)
+        capture(app, "mortgage-bottom-navigation-prepayment")
+        XCTAssertEqual(visibility, .completed, "Switching the bottom navigation must bring the new scene to its summary")
         app.buttons["mortgage-scene-trial"].tap()
         XCTAssertTrue(app.buttons["mortgage-scene-trial"].isSelected)
         XCTAssertTrue(app.staticTexts["mortgage-monthly-payment"].isHittable)

@@ -217,13 +217,14 @@ struct MortgageSummaryCard: View {
                     VStack(alignment: .leading, spacing: 8) { paymentTitle; badge }
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Text("¥").font(.title2.weight(.medium)).foregroundStyle(MortgageStyle.secondary)
+                    Text("¥").font(.title2.weight(.medium)).foregroundStyle(MortgageStyle.secondary).accessibilityHidden(true)
                     Text(MortgageDisplay.money(presentation.payment))
                         .font(.system(size: heroSize, weight: .semibold, design: .rounded)).tracking(-1.5)
                         .monospacedDigit()
                         .lineLimit(1).minimumScaleFactor(0.45)
                         .accessibilityIdentifier("mortgage-monthly-payment")
-                }.accessibilityElement(children: .combine)
+                        .accessibilityLabel("人民币 " + MortgageDisplay.money(presentation.payment) + " 元")
+                }
                 Text(presentation.metadata.joined(separator: "  /  "))
                     .font(.caption).foregroundStyle(MortgageStyle.secondary).fixedSize(horizontal: false, vertical: true)
             }

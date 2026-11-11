@@ -64,10 +64,10 @@ struct MortgageView: View {
     private var needsInputs: Bool { inputsExpanded || calculation.isNull || (isPrepayment && !presentation.hasPrepayment) }
 
     var body: some View {
-        ScrollViewReader { proxy in
+        ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    pageHeader.id("mortgage-top")
+                    pageHeader
                     if let failure { NativeFailure(message: failure).accessibilityIdentifier("mortgage-failure") }
                     if !calculation.isNull && (!isPrepayment || presentation.hasPrepayment) {
                         MortgageSummaryCard(presentation: presentation, actionTitle: isPrepayment ? "比较两种还法" : kind == "new" ? "对比还款方式" : "查看还款计划") {
@@ -91,9 +91,11 @@ struct MortgageView: View {
                     }
                     footer
                 }.frame(maxWidth: 700).padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 26).frame(maxWidth: .infinity)
-            }.accessibilityIdentifier("mortgage-scroll")
-                .scrollDismissesKeyboard(.interactively)
-                .onChange(of: scene) { _, _ in proxy.scrollTo("mortgage-top", anchor: .top) }
+            }
+            // Give each scene a fresh scroll position while drafts and cloud selections
+            // stay in MortgageView's state above the scroll view.
+            .id(scene).accessibilityIdentifier("mortgage-scroll")
+            .scrollDismissesKeyboard(.interactively)
         }.safeAreaInset(edge: .bottom, spacing: 0) { sceneTabs }
             .disabled(busy)
             .background(MortgageStyle.background.ignoresSafeArea()).foregroundStyle(MortgageStyle.text).tint(MortgageStyle.accent)
