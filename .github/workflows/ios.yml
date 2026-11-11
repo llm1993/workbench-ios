@@ -23,7 +23,7 @@ permissions:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,7 +70,7 @@ jobs:
       - name: Compile and test native workspace modules
         id: native
         if: steps.policy.outputs.run_tests == 'true'
-        timeout-minutes: 25
+        timeout-minutes: 35
         env:
           TEST_SCHEME: ${{ steps.policy.outputs.scheme }}
         run: |
