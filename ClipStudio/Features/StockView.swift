@@ -31,6 +31,7 @@ struct StockView: View {
     private var overviewKey: String { [kind, method].joined(separator: "|") }
     private var predictionKey: String { [kind, method, holding, live].joined(separator: "|") }
     private var key: String { [kind, method, scope, result, horizon, type].joined(separator: "|") }
+    private var readKey: String { [overviewKey, key, predictionKey].joined(separator: "|") }
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
@@ -53,9 +54,7 @@ struct StockView: View {
                 Button { filterSheet = true } label: { Image(systemName: "slider.horizontal.3") }.accessibilityLabel("筛选与收藏")
             } }
             .sheet(isPresented: $filterSheet) { filterOptions }
-            .task(id: overviewKey) { await loadOverview() }
-            .task(id: predictionKey) { await loadPredictions() }
-            .task(id: key) { await load() }
+            .task(id: readKey) { await loadChangedSections() }
             .refreshable { await refresh() }
             .onDisappear { overviewRead.cancel(); predictionRead.cancel(); listRead.cancel() }
     }
@@ -229,10 +228,20 @@ struct StockView: View {
     }
     private func refresh() async {
         mutationFailure = nil
-        async let a: Void = loadOverview()
-        async let b: Void = loadPredictions()
-        async let c: Void = load()
-        _ = await (a, b, c)
+        await loadOverview()
+        guard !Task.isCancelled else { return }
+        await load()
+        guard !Task.isCancelled else { return }
+        await loadPredictions()
+    }
+    private func loadChangedSections() async {
+        // C5's pure-Python database driver slows dramatically under concurrent
+        // report reads. Show the overview and companies first, then predictions.
+        if overviewScope != overviewKey { await loadOverview() }
+        guard !Task.isCancelled else { return }
+        if listScope != key { await load() }
+        guard !Task.isCancelled else { return }
+        if predictionScope != predictionKey { await loadPredictions() }
     }
     private func loadOverview() async {
         guard let api = store.api else { return }
