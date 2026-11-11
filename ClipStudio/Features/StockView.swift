@@ -11,22 +11,23 @@ struct StockView: View {
     @State private var holding = "1"
     @State private var live = "1"
     @State private var addCompany = ""
-    @State private var overview: JSONValue = .null
-    @State private var predictions: JSONValue = .null
-    @State private var groups: [JSONValue] = []
-    @State private var total = 0
-    @State private var favCount = 0
-    @State private var loading = false
+    @StateObject private var overviewRead = StockReadState()
+    @StateObject private var predictionRead = StockReadState()
+    @StateObject private var listRead = StockReadState()
     @State private var mutating = false
-    @State private var failure: String?
+    @State private var mutationFailure: String?
     @State private var expanded: Set<String> = []
-    @State private var requestRevision = UUID()
-    @State private var overviewScope = ""
-    @State private var predictionScope = ""
-    @State private var listScope = ""
-    @State private var overviewRevision = UUID()
-    @State private var predictionRevision = UUID()
     @State private var filterSheet = false
+    private var overview: JSONValue { overviewRead.value }
+    private var predictions: JSONValue { predictionRead.value }
+    private var groups: [JSONValue] { listRead.value["groups"].array }
+    private var total: Int { listRead.value["total"].int }
+    private var favCount: Int { listRead.value["fav_count"].int }
+    private var loading: Bool { listRead.loading }
+    private var overviewScope: String { overviewRead.scope }
+    private var predictionScope: String { predictionRead.scope }
+    private var listScope: String { listRead.scope }
+    private var failure: String? { mutationFailure ?? overviewRead.failure ?? predictionRead.failure ?? listRead.failure }
     private var overviewKey: String { [kind, method].joined(separator: "|") }
     private var predictionKey: String { [kind, method, holding, live].joined(separator: "|") }
     private var key: String { [kind, method, scope, result, horizon, type].joined(separator: "|") }
@@ -35,6 +36,7 @@ struct StockView: View {
             LazyVStack(alignment: .leading, spacing: 16) {
                 filters
                 if let failure { NativeFailure(message: failure); Button("重试") { Task { await refresh() } } }
+                if overviewRead.loading && overviewScope != overviewKey { ProgressView("正在读取概览").frame(maxWidth: .infinity) }
                 if !overview.isNull, overviewScope == overviewKey { summary }
                 Text("最近的判断 · \(total) 家公司").font(.title3.bold())
                 if loading && listScope != key { ProgressView().frame(maxWidth: .infinity, minHeight: 120) }
@@ -55,6 +57,7 @@ struct StockView: View {
             .task(id: predictionKey) { await loadPredictions() }
             .task(id: key) { await load() }
             .refreshable { await refresh() }
+            .onDisappear { overviewRead.cancel(); predictionRead.cancel(); listRead.cancel() }
     }
     private var filters: some View {
         NativeCard {
@@ -110,7 +113,7 @@ struct StockView: View {
                 Text("预测准不准").font(.headline)
                 Picker("预测持有期", selection: $holding) { Text("1 天").tag("1"); Text("3 天").tag("3"); Text("5 天").tag("5") }.pickerStyle(.segmented)
                 Picker("统计样本", selection: $live) { Text("实盘").tag("1"); Text("含回测").tag("0") }.pickerStyle(.segmented)
-                if predictionScope != predictionKey { ProgressView().frame(maxWidth: .infinity) }
+                if predictionRead.loading && predictionScope != predictionKey { ProgressView().frame(maxWidth: .infinity) }
                 ForEach(Array((predictionScope == predictionKey ? predictions["predictors"].array : []).enumerated()), id: \.offset) { _, p in
                     VStack(alignment: .leading, spacing: 5) {
                         LabeledContent(p["label"].text.isEmpty ? p["name"].text : p["label"].text, value: Display.percent(p["rate"]))
@@ -225,7 +228,7 @@ struct StockView: View {
         }
     }
     private func refresh() async {
-        failure = nil
+        mutationFailure = nil
         async let a: Void = loadOverview()
         async let b: Void = loadPredictions()
         async let c: Void = load()
@@ -233,46 +236,30 @@ struct StockView: View {
     }
     private func loadOverview() async {
         guard let api = store.api else { return }
-        let stamp = overviewKey, revision = UUID(); overviewRevision = revision
-        do {
-            let next = try await api.document(ClipAPI.path("/api/stock/overview", query: ["kind":kind,"method":method]))
-            try Task.checkCancellation()
-            guard stamp == overviewKey, revision == overviewRevision else { return }
-            overview = next; overviewScope = stamp
-        } catch is CancellationError { }
-        catch let e as URLError where e.code == .cancelled { }
-        catch { if stamp == overviewKey, revision == overviewRevision { failure = error.localizedDescription } }
+        let path = ClipAPI.path("/api/stock/overview", query: ["kind":kind,"method":method])
+        await overviewRead.load(scope: overviewKey) { try await api.document(path) }
     }
     private func loadPredictions() async {
         guard let api = store.api else { return }
-        let stamp = predictionKey, revision = UUID(); predictionRevision = revision
-        do {
-            let next = try await api.document(ClipAPI.path("/api/stock/predictions", query: ["kind":kind,"method":method,"horizon":holding,"live":live]))
-            try Task.checkCancellation()
-            guard stamp == predictionKey, revision == predictionRevision else { return }
-            predictions = next; predictionScope = stamp
-        } catch is CancellationError { }
-        catch let e as URLError where e.code == .cancelled { }
-        catch { if stamp == predictionKey, revision == predictionRevision { failure = error.localizedDescription } }
+        let path = ClipAPI.path("/api/stock/predictions", query: ["kind":kind,"method":method,"horizon":holding,"live":live])
+        await predictionRead.load(scope: predictionKey) { try await api.document(path) }
     }
     private func load(append: Bool = false) async {
         guard let api = store.api else { return }
         if append && loading { return }
-        let stamp = key, revision = UUID();requestRevision=revision;loading = true; failure = nil
-        defer { if revision == requestRevision { loading = false } }
-        do {
-            let page = try await api.document(ClipAPI.path("/api/stock/companies", query: ["kind":kind,"method":method,"result":result,"horizon":horizon,"type":type,"scope":scope,"offset":String(append ? groups.count : 0),"limit":"30"]))
-            try Task.checkCancellation(); guard stamp == key,revision==requestRevision else { return }
-            groups = append ? groups + page["groups"].array : page["groups"].array
-            total = page["total"].int; favCount = page["fav_count"].int; listScope = stamp
-        } catch is CancellationError { }
-        catch let e as URLError where e.code == .cancelled { }
-        catch { if stamp == key { failure = error.localizedDescription } }
+        mutationFailure = nil
+        let previous = groups
+        let path = ClipAPI.path("/api/stock/companies", query: ["kind":kind,"method":method,"result":result,"horizon":horizon,"type":type,"scope":scope,"offset":String(append ? groups.count : 0),"limit":"30"])
+        await listRead.load(scope: key) {
+            var page = try await api.document(path)
+            if append { page["groups"] = .array(previous + page["groups"].array) }
+            return page
+        }
     }
     private func favorite() async {
         guard !mutating, let api = store.api else { return }; mutating = true; defer { mutating = false }
         do { _ = try await api.document("/api/stock/favorites", method: "POST", payload: .object(["q":.string(addCompany)])); addCompany = ""; await load() }
-        catch { failure = error.localizedDescription }
+        catch { mutationFailure = error.localizedDescription }
     }
     private func unfavorite(_ g: JSONValue) async {
         guard !mutating, let api = store.api else { return }; mutating = true; defer { mutating = false }
@@ -280,7 +267,7 @@ struct StockView: View {
             if g["fav"].flag { _ = try await api.document("/api/stock/favorites/\(g["code"].text)", method: "DELETE") }
             else { _ = try await api.document("/api/stock/favorites", method: "POST", payload: .object(["q":g["code"]])) }
             await load()
-        } catch { failure = error.localizedDescription }
+        } catch { mutationFailure = error.localizedDescription }
     }
 }
 
