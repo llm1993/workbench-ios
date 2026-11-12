@@ -17,6 +17,15 @@ final class SalaryInterfaceTests: XCTestCase {
         }
         XCTFail("Salary control was not reachable: \(element)")
     }
+    private func revealMonth(_ month: Int, app: XCUIApplication) {
+        let strip = app.descendants(matching: .any)["salary-month-strip"]
+        let target = app.buttons["salary-month-\(month)"]
+        for _ in 0..<8 {
+            if target.exists && target.isHittable { return }
+            strip.swipeLeft()
+        }
+        XCTFail("Month \(month) was not reachable in the month strip")
+    }
     private func top(_ app: XCUIApplication) {
         for _ in 0..<12 {
             if app.descendants(matching: .any)["salary-net"].isHittable { return }
@@ -68,7 +77,7 @@ final class SalaryInterfaceTests: XCTestCase {
         app.buttons["salary-scene-slip"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["salary-receipt"].waitForExistence(timeout: 5))
         let december = app.buttons["salary-month-12"]
-        reveal(december, app: app); december.tap()
+        revealMonth(12, app: app); december.tap()
         XCTAssertTrue(app.staticTexts["12 月工资条"].waitForExistence(timeout: 5))
         let employer = app.switches["salary-employer-toggle"]
         reveal(employer, app: app); employer.tap()
