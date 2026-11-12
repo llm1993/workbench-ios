@@ -40,7 +40,7 @@ struct SalaryCompareScene: View {
             Text(SalaryPresentation.trapText(trap, bonus: presentation.main["bonus"].double))
                 .font(.caption2).foregroundStyle(SalaryStyle.secondary).fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("salary-bonus-trap")
-        }.accessibilityIdentifier("salary-bonus-compare")
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("salary-bonus-compare")
     }
     private var bonusCards: some View {
         ForEach(presentation.bonusCards) { card in
@@ -84,7 +84,7 @@ struct SalaryCompareScene: View {
                      flat: abs(offerBResult["main"]["net"].double - offerAResult["main"]["net"].double) < 1,
                      identifier: "salary-offer-delta")
             SalaryBarList(bars: SalaryPresentation.offerBars(offerAResult, offerBResult))
-        }.accessibilityIdentifier("salary-offers")
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("salary-offers")
     }
     private var syncButton: some View {
         Button(action: syncOffer) {
@@ -128,7 +128,7 @@ struct SalaryCompareScene: View {
             SalarySlider(title: "月薪增加", value: $raiseDelta, range: 500...10000, step: 500,
                          readout: "¥" + SalaryDisplay.whole(raiseDelta), identifier: "salary-raise")
             SalaryMetricRow(metrics: presentation.raiseMetrics(marginal, delta: raiseDelta))
-        }.accessibilityIdentifier("salary-raise-panel")
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("salary-raise-panel")
     }
 
     private var yearPanel: some View {

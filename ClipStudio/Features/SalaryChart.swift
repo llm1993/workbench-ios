@@ -120,7 +120,7 @@ struct SalaryChartPanel: View {
                 Button("怎么算的", action: explain).font(.caption.weight(.medium)).frame(minHeight: 44)
                     .accessibilityIdentifier("salary-explain")
             }
-        }.accessibilityIdentifier("salary-chart")
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("salary-chart")
     }
     private var heading: some View {
         VStack(alignment: .leading, spacing: 5) {

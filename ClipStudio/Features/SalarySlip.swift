@@ -43,7 +43,7 @@ struct SalarySlipScene: View {
                     .font(.system(.title2, design: .rounded).weight(.semibold)).monospacedDigit()
                     .foregroundStyle(SalaryStyle.net).lineLimit(1).minimumScaleFactor(0.6)
             }.accessibilityElement(children: .combine).accessibilityIdentifier("salary-receipt-net")
-        }.accessibilityIdentifier("salary-receipt")
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("salary-receipt")
     }
 
     private var taxPanel: some View {
@@ -55,7 +55,7 @@ struct SalarySlipScene: View {
             Text(presentation.taxFormula).font(.caption).foregroundStyle(SalaryStyle.secondary)
                 .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                 .accessibilityIdentifier("salary-tax-formula")
-        }.accessibilityIdentifier("salary-tax")
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("salary-tax")
     }
 
     @ViewBuilder private var actions: some View {

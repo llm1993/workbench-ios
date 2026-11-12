@@ -36,7 +36,7 @@ struct SalaryControls: View {
             bonus
             Divider().overlay(SalaryStyle.line)
             others
-        }.accessibilityIdentifier("salary-controls")
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("salary-controls")
     }
 
     private var tools: some View {

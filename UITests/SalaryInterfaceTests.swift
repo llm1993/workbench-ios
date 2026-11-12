@@ -18,10 +18,11 @@ final class SalaryInterfaceTests: XCTestCase {
         XCTFail("Salary control was not reachable: \(element)")
     }
     private func revealMonth(_ month: Int, app: XCUIApplication) {
-        let strip = app.descendants(matching: .any)["salary-month-strip"]
+        let strip = app.scrollViews["salary-month-strip"]
         let target = app.buttons["salary-month-\(month)"]
         for _ in 0..<8 {
-            if target.exists && target.isHittable { return }
+            // isHittable throws instead of returning false for buttons scrolled out of a horizontal strip.
+            if target.exists && app.frame.contains(CGPoint(x: target.frame.midX, y: target.frame.midY)) { return }
             strip.swipeLeft()
         }
         XCTFail("Month \(month) was not reachable in the month strip")

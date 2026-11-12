@@ -262,7 +262,8 @@ struct SalaryView: View {
             }.padding(20)
         }.background(SalaryStyle.surface, in: RoundedRectangle(cornerRadius: 24))
             .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(SalaryStyle.line, lineWidth: 0.7) }
-            .accessibilityIdentifier("salary-hero")
+            // Without .contain a container's identifier overwrites every descendant's, hiding salary-net & friends.
+            .accessibilityElement(children: .contain).accessibilityIdentifier("salary-hero")
     }
     private var monthButton: some View {
         Button { sheet = .month } label: {
