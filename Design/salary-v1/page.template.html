@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>到手工资 · iOS 子应用界面预览</title>
+<style>/* STYLES */</style>
+</head>
+<body>
+<svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></symbol>
+<symbol id="slip" viewBox="0 0 24 24"><path d="M5 3h14v18l-2.3-1.6L14.4 21l-2.4-1.6L9.6 21l-2.3-1.6L5 21Z"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></symbol>
+<symbol id="calc" viewBox="0 0 24 24"><rect x="4.5" y="2.5" width="15" height="19" rx="3.2"/><path d="M8 7h8M8 11.5h1.5m4 0H15m-7 4h1.5m4 0H15m-7 3.5h1.5m4 0H15"/></symbol>
+<symbol id="compare" viewBox="0 0 24 24"><path d="M3 7h17m-4-4 4 4-4 4M21 17H4m4-4-4 4 4 4"/></symbol>
+<symbol id="sliders" viewBox="0 0 24 24"><path d="M3 6h4m4 0h10M3 12h10m4 0h4M3 18h4m4 0h10M7 3v6m10 0v6M7 15v6"/></symbol>
+<symbol id="folder" viewBox="0 0 24 24"><path d="M3 7.5V5.2A1.2 1.2 0 0 1 4.2 4h5l2 3h8.6A1.2 1.2 0 0 1 21 8.2V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/></symbol>
+<symbol id="doc" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6ZM14 3v5h5M9.5 12.5h6m-6 4h6"/></symbol>
+<symbol id="reset" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 4v5h5"/></symbol>
+<symbol id="dice" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01" stroke-width="2.6"/></symbol>
+<symbol id="export" viewBox="0 0 24 24"><path d="M12 15V3m-4 4 4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
+<symbol id="copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2.6"/><path d="M15.5 5.5v-1a1 1 0 0 0-1-1h-10a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1"/></symbol>
+<symbol id="bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5.9 1.1 1 1.7l.1.5h5l.1-.5c.1-.6.4-1.2 1-1.7A6 6 0 0 0 12 3Z"/></symbol>
+<symbol id="warn" viewBox="0 0 24 24"><path d="M12 4.5 21 20H3ZM12 10v4.5M12 17.4h.01" stroke-width="1.8"/></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M12 20V5m-6 6 6-6 6 6"/></symbol>
+<symbol id="trend" viewBox="0 0 24 24"><path d="M3 17.5 9.5 11l4 4L21 7.5M21 7.5h-5m5 0v5"/></symbol>
+<symbol id="calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M3.5 10h17M8 3v4m8-4v4"/></symbol>
+</defs></svg>
+
+<div class="preview-tools">
+  <span>iOS 界面预览 · 示例数据</span>
+  <div>
+    <button type="button" id="theme-toggle" aria-pressed="false">深色</button>
+    <button type="button" id="text-toggle" aria-pressed="false">大字号</button>
+  </div>
+</div>
+
+<div class="phone" id="phone">
+  <div class="status-bar" aria-hidden="true"><strong>9:41</strong><span>▴ ▰ ▰</span></div>
+  <header class="app-toolbar">
+    <span class="toolbar-icon" aria-hidden="true"><svg><use href="#grid"/></svg></span>
+    <span>到手工资</span>
+    <button type="button" class="toolbar-action" id="plans-button"><svg><use href="#folder"/></svg>方案</button>
+  </header>
+
+  <div class="sticky-net" id="sticky-net">
+    <span><span id="sticky-label">1 月到手</span> <strong id="sticky-value">—</strong></span>
+    <button type="button" id="sticky-top">回到顶部 ↑</button>
+  </div>
+
+  <main class="app-scroll" id="app-scroll">
+
+    <!-- ══ 场景一：到手试算 ══ -->
+    <section class="scene" id="scene-calc">
+      <div class="page-heading enter">
+        <div><h1>到手试算</h1><span class="badge"><svg><use href="#doc"/></svg>示例数据</span></div>
+        <p>税前到到手，中间到底少了什么。</p>
+      </div>
+
+      <p class="notice" id="calc-notice" hidden><svg><use href="#warn"/></svg><span id="calc-notice-text"></span></p>
+
+      <section class="slip enter" aria-label="到手工资测算结果" aria-live="polite">
+        <div class="slip-head">
+          <div class="slip-caption">
+            <button type="button" class="slip-month" id="slip-month-button"><svg><use href="#calendar"/></svg><span id="slip-month">1 月到手</span></button>
+            <span class="pill" id="slip-badge">累计预扣</span>
+          </div>
+          <div class="slip-value rnd"><span>¥</span><strong id="net-value">0.00</strong></div>
+          <div class="slip-sub" id="slip-sub"></div>
+        </div>
+        <div class="tear" aria-hidden="true"><i></i><i></i></div>
+        <div class="slip-body">
+          <div class="flow" id="flow"></div>
+          <div class="share" id="share" role="img" aria-label="税前工资去向占比"></div>
+          <div class="share-labels" id="share-labels"></div>
+          <div class="metrics" id="metrics"></div>
+          <button class="insight" type="button" id="insight-button">
+            <svg><use href="#bulb"/></svg>
+            <span><span id="insight-text"></span><b id="insight-action">看年终奖两种算法</b></span>
+            <span aria-hidden="true">›</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="panel controls enter" aria-label="测算参数">
+        <div class="controls-head">
+          <strong><svg><use href="#sliders"/></svg>测算参数</strong>
+          <span class="tools">
+            <button type="button" class="icon-btn" id="random-button" title="换一组示例" aria-label="换一组示例"><svg><use href="#dice"/></svg></button>
+            <button type="button" class="icon-btn" id="reset-button" title="恢复默认" aria-label="恢复默认"><svg><use href="#reset"/></svg></button>
+            <button type="button" class="icon-btn" id="export-button" title="导出工资条" aria-label="导出工资条"><svg><use href="#export"/></svg></button>
+          </span>
+        </div>
+        <p class="control-note">改一个数，上面立刻重算 · 全部为示例参数</p>
+
+        <div class="stack">
+          <div class="form-row">
+            <label class="field"><span>参保城市</span>
+              <select data-field="city" id="city-select"></select>
+            </label>
+            <label class="field"><span>税前月薪 <b id="gross-read">—</b></span>
+              <input data-field="gross" type="number" inputmode="decimal" min="0" step="500" value="32000">
+            </label>
+          </div>
+          <input class="slider" type="range" data-field="gross" id="gross-slider" min="3000" max="120000" step="500" value="32000" aria-label="税前月薪滑块">
+          <div class="form-row" id="custom-city-row" hidden>
+            <label class="field"><span>社保基数下限</span><input data-field="cityFloor" type="number" min="0" step="1" value="0"></label>
+            <label class="field"><span>社保基数上限</span><input data-field="cityCeil" type="number" min="0" step="1" value="999999"></label>
+          </div>
+
+          <div class="divider"></div>
+          <div>
+            <div class="sub-title"><span>社保缴费基数</span><b id="si-base-read">—</b></div>
+            <div class="seg" role="group" aria-label="社保基数口径" style="margin-top:9px">
+              <button type="button" data-base="auto" aria-pressed="true">按月薪</button>
+              <button type="button" data-base="floor" aria-pressed="false">按下限</button>
+              <button type="button" data-base="custom" aria-pressed="false">自己填</button>
+            </div>
+            <label class="field" id="custom-base-field" hidden style="margin-top:11px"><span>自定义社保基数（元）</span><input data-field="customBase" type="number" min="0" step="100" value=""></label>
+            <p class="field-hint" id="si-hint"></p>
+          </div>
+          <label class="field"><span>公积金比例 <b id="fund-read">—</b></span>
+            <input class="slider" type="range" data-field="fundRate" id="fund-slider" min="0" max="12" step="0.5" value="7">
+          </label>
+          <div>
+            <div class="sub-title"><span>公积金基数</span><b id="fund-base-read">—</b></div>
+            <div class="seg" role="group" aria-label="公积金基数口径" style="margin-top:9px">
+              <button type="button" data-fundbase="auto" aria-pressed="true">按月薪</button>
+              <button type="button" data-fundbase="floor" aria-pressed="false">按下限</button>
+              <button type="button" data-fundbase="custom" aria-pressed="false">自己填</button>
+            </div>
+            <label class="field" id="custom-fund-field" hidden style="margin-top:11px"><span>自定义公积金基数（元）</span><input data-field="customFundBase" type="number" min="0" step="100" value=""></label>
+          </div>
+
+          <div class="divider"></div>
+          <div class="sub-title"><span>专项附加扣除</span><b id="special-read">—</b></div>
+          <div class="ded-row">
+            <span><b>子女教育</b><small>每孩 2,000 元/月</small></span>
+            <span class="stepper"><button type="button" data-step="children" data-delta="-1" aria-label="减少子女数">−</button><span id="children-count">1</span><button type="button" data-step="children" data-delta="1" aria-label="增加子女数">+</button></span>
+          </div>
+          <div class="ded-row">
+            <span><b>3 岁以下婴幼儿照护</b><small>每孩 2,000 元/月</small></span>
+            <span class="stepper"><button type="button" data-step="infants" data-delta="-1" aria-label="减少婴幼儿数">−</button><span id="infants-count">0</span><button type="button" data-step="infants" data-delta="1" aria-label="增加婴幼儿数">+</button></span>
+          </div>
+          <div>
+            <div class="sub-title" style="margin-bottom:8px"><span>赡养老人</span></div>
+            <div class="seg" role="group" aria-label="赡养老人扣除">
+              <button type="button" data-elder="only" aria-pressed="true">独生 3,000</button>
+              <button type="button" data-elder="share" aria-pressed="false">分摊 1,500</button>
+              <button type="button" data-elder="none" aria-pressed="false">无</button>
+            </div>
+          </div>
+          <div>
+            <div class="sub-title" style="margin-bottom:8px"><span>住房（二选一）</span></div>
+            <div class="seg" role="group" aria-label="住房扣除">
+              <button type="button" data-housing="loan" aria-pressed="false">房贷 1,000</button>
+              <button type="button" data-housing="rent" aria-pressed="true">房租</button>
+              <button type="button" data-housing="none" aria-pressed="false">无</button>
+            </div>
+            <label class="field" id="rent-field" style="margin-top:11px"><span>房租城市档位</span>
+              <select data-field="rentTier">
+                <option value="0">直辖市 / 省会 / 计划单列市 1,500</option>
+                <option value="1">户籍人口超 100 万 1,100</option>
+                <option value="2">户籍人口不超 100 万 800</option>
+              </select>
+            </label>
+          </div>
+          <div class="chips">
+            <button type="button" class="chip" data-toggle="study" aria-pressed="false">继续教育 <small>400/月</small></button>
+            <button type="button" class="chip" id="standard-button" aria-pressed="false">扣除标准 <small>›</small></button>
+          </div>
+          <label class="field"><span>个人养老金（元/月，上限 1,000）</span><input data-field="pension" type="number" min="0" max="1000" step="100" value="0"></label>
+
+          <div class="divider"></div>
+          <div class="form-row">
+            <label class="field"><span>年终奖（元）</span><input data-field="bonus" type="number" min="0" step="1000" value="60000"></label>
+            <label class="field"><span>发放月份</span><select data-field="bonusMonth" id="bonus-month-select"></select></label>
+          </div>
+          <div>
+            <div class="sub-title" style="margin-bottom:8px"><span>年终奖计税方式</span><b id="bonus-mode-read">—</b></div>
+            <div class="seg" role="group" aria-label="年终奖计税方式">
+              <button type="button" data-bonusmode="auto" aria-pressed="true">自动择优</button>
+              <button type="button" data-bonusmode="separate" aria-pressed="false">单独计税</button>
+              <button type="button" data-bonusmode="merged" aria-pressed="false">并入综合</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="form-row">
+            <label class="field"><span>其他税前扣除</span><input data-field="otherPre" type="number" min="0" step="50" value="0"></label>
+            <label class="field"><span>税后扣款</span><input data-field="afterTax" type="number" min="0" step="50" value="0"></label>
+          </div>
+          <label class="field"><span>本年入职月份（影响累计预扣起点）</span><select data-field="startMonth" id="start-month-select"></select></label>
+          <p class="field-hint">其他税前扣除如企业年金、税优健康险；税后扣款如工会费、餐费、宿舍费。</p>
+        </div>
+      </section>
+
+      <section class="panel enter" aria-label="逐月到手走势">
+        <div class="chart-head">
+          <h2>逐月到手</h2>
+          <button type="button" class="pill" id="detail-button">全年明细 ›</button>
+        </div>
+        <p class="chart-sub" id="chart-sub">累计预扣预缴：收入累计越高，税率跳档后到手越少。</p>
+        <div class="seg" role="group" aria-label="图表口径" style="margin-top:12px">
+          <button type="button" data-chart="salary" aria-pressed="true">只看月薪</button>
+          <button type="button" data-chart="all" aria-pressed="false">含年终奖</button>
+        </div>
+        <div class="legend" id="legend"></div>
+        <svg class="plot" id="plot" viewBox="0 0 320 196" role="img" aria-label="十二个月到手工资与扣除构成"></svg>
+        <div class="chart-read"><span id="chart-read-label">1 月</span><strong id="chart-read-value">—</strong></div>
+        <div class="chart-foot"><span>点柱子切换月份</span><button type="button" id="explain-button">怎么算的 ›</button></div>
+      </section>
+
+      <button class="invite enter" type="button" id="invite-button">
+        <span class="invite-icon" aria-hidden="true"><svg><use href="#trend"/></svg></span>
+        <span><strong>换个 offer，到手差多少？</strong><small id="invite-copy"></small><b>去对比 →</b></span>
+      </button>
+
+      <footer>按居民个人工资薪金累计预扣预缴法测算，未含全年一次性奖金以外的其他所得、公益捐赠与汇算清缴补退。<br>城市社保与公积金预设是示例值，实际以当地社保年度公布口径和工资条为准。<br><span id="policy-note"></span></footer>
+    </section>
+
+    <!-- ══ 场景二：工资条 ══ -->
+    <section class="scene" id="scene-slip" hidden>
+      <div class="page-heading enter">
+        <div><h1>逐月工资条</h1><span class="badge"><svg><use href="#doc"/></svg>示例数据</span></div>
+        <p>每一笔扣款都对得上，个税能看到算式。</p>
+      </div>
+      <div class="month-strip" id="month-strip" role="group" aria-label="选择月份"></div>
+      <section class="receipt enter" aria-label="当月工资条">
+        <div class="receipt-head">
+          <div><h2 id="receipt-title">1 月工资条</h2><p id="receipt-sub"></p></div>
+          <span class="pill" id="receipt-pill">在职</span>
+        </div>
+        <div class="receipt-section"><h3><span>应发项目</span></h3><div id="receipt-income"></div></div>
+        <div class="receipt-section"><h3><span>个人扣除</span></h3><div id="receipt-deduct"></div></div>
+        <div class="er-toggle">
+          <span>显示单位缴纳部分<small style="display:block;font-size:10px;opacity:.8;margin-top:3px">不影响你的到手，只影响公司成本</small></span>
+          <button type="button" class="switch" id="employer-switch" aria-pressed="false" aria-label="显示单位缴纳部分"></button>
+        </div>
+        <div class="receipt-section" id="employer-section" hidden><h3><span>单位缴纳</span><span id="receipt-er-sum"></span></h3><div id="receipt-employer"></div></div>
+        <div class="receipt-section"><div class="rline net sum"><span>实发到手</span><b class="rnd" id="receipt-net">—</b></div></div>
+      </section>
+
+      <section class="panel enter" aria-label="本月个税算式">
+        <div class="chart-head"><h2>本月个税怎么来的</h2><span class="pill tax" id="tax-rate-pill">—</span></div>
+        <div class="tax-steps" id="tax-steps" style="margin-top:14px"></div>
+        <p class="formula" id="tax-formula"></p>
+      </section>
+
+      <div class="actions enter">
+        <button type="button" class="btn" id="copy-slip-button"><svg><use href="#copy"/></svg>复制工资条</button>
+        <button type="button" class="btn primary" id="download-slip-button"><svg><use href="#export"/></svg>导出文本</button>
+      </div>
+      <footer>工资条按当前测算参数生成，不代表任何真实单位的发放结果。</footer>
+    </section>
+
+    <!-- ══ 场景三：对比 ══ -->
+    <section class="scene" id="scene-compare" hidden>
+      <div class="page-heading enter">
+        <div><h1>算清差别</h1><span class="badge"><svg><use href="#compare"/></svg>示例数据</span></div>
+        <p>年终奖怎么发、offer 怎么选、涨薪能落袋多少。</p>
+      </div>
+
+      <section class="panel enter" aria-label="年终奖计税方式对比">
+        <div class="chart-head"><h2>年终奖两种算法</h2><span class="pill" id="bonus-amount-pill">—</span></div>
+        <p class="chart-sub">同一笔年终奖，选错方式一年可能差几千元。</p>
+        <div class="versus" id="bonus-versus" style="margin-top:14px"></div>
+        <div class="delta" id="bonus-delta" style="margin-top:12px"></div>
+        <p class="field-hint" id="bonus-trap" style="margin-top:10px"></p>
+      </section>
+
+      <section class="panel enter" aria-label="两份 offer 对比">
+        <div class="chart-head"><h2>两份 offer</h2><button type="button" class="pill" id="sync-offer-button">A 同步当前 ›</button></div>
+        <p class="chart-sub">A 默认取当前测算参数，B 可以随便改。</p>
+        <div class="offer-grid" style="margin-top:14px">
+          <div class="offer-card a">
+            <header><strong><i>A</i>当前方案</strong><span class="pill" id="offer-a-city">—</span></header>
+            <div class="mini">
+              <label>税前月薪<input data-offer="a" data-key="gross" type="number" min="0" step="500"></label>
+              <label>年终奖<input data-offer="a" data-key="bonus" type="number" min="0" step="1000"></label>
+              <label>公积金 %<input data-offer="a" data-key="fundRate" type="number" min="0" max="12" step="0.5"></label>
+              <label>城市<select data-offer="a" data-key="city"></select></label>
+            </div>
+            <div class="result"><span>全年到手</span><strong id="offer-a-net">—</strong></div>
+          </div>
+          <div class="offer-card b">
+            <header><strong><i>B</i>另一份 offer</strong><span class="pill" id="offer-b-city">—</span></header>
+            <div class="mini">
+              <label>税前月薪<input data-offer="b" data-key="gross" type="number" min="0" step="500"></label>
+              <label>年终奖<input data-offer="b" data-key="bonus" type="number" min="0" step="1000"></label>
+              <label>公积金 %<input data-offer="b" data-key="fundRate" type="number" min="0" max="12" step="0.5"></label>
+              <label>城市<select data-offer="b" data-key="city"></select></label>
+            </div>
+            <div class="result"><span>全年到手</span><strong id="offer-b-net">—</strong></div>
+          </div>
+        </div>
+        <div class="delta" id="offer-delta" style="margin-top:12px"></div>
+        <div class="bars" id="offer-bars" style="margin-top:14px"></div>
+      </section>
+
+      <section class="panel enter" aria-label="涨薪边际测算">
+        <div class="chart-head"><h2>涨薪能落袋多少</h2><span class="pill" id="marginal-pill">—</span></div>
+        <p class="chart-sub">月薪加一笔，社保、公积金和个税会跟着吃掉一部分。</p>
+        <label class="field" style="margin-top:14px"><span>月薪增加 <b id="raise-read">—</b></span>
+          <input class="slider" type="range" id="raise-slider" min="500" max="10000" step="500" value="1000">
+        </label>
+        <div class="metrics" id="marginal-metrics" style="margin-top:16px"></div>
+      </section>
+
+      <section class="panel enter" aria-label="全年汇总">
+        <div class="chart-head"><h2>全年这笔钱去哪了</h2><span class="pill" id="year-total-pill">—</span></div>
+        <div class="bars" id="year-bars" style="margin-top:16px"></div>
+        <p class="field-hint" id="year-note" style="margin-top:14px"></p>
+      </section>
+      <footer>对比结果基于同一套示例参数与现行税率表，不含股权激励、劳务报酬与地方性补贴差异。</footer>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="到手工资功能导航">
+    <button type="button" data-scene="calc" aria-pressed="true"><svg><use href="#calc"/></svg><span>到手试算</span></button>
+    <button type="button" data-scene="slip" aria-pressed="false"><svg><use href="#slip"/></svg><span>工资条</span></button>
+    <button type="button" data-scene="compare" aria-pressed="false"><svg><use href="#compare"/></svg><span>对比</span></button>
+  </nav>
+  <div class="home-indicator" aria-hidden="true"><span></span></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="sheet" aria-labelledby="sheet-title">
+    <div class="sheet-header"><h2 id="sheet-title"></h2><button type="button" id="close-sheet">完成</button></div>
+    <div class="sheet-content" id="sheet-content"></div>
+  </dialog>
+</div>
+
+<p class="preview-note">原生界面设计预览，非 iOS 模拟器截图。城市社保 / 公积金预设与工资数据均为示例，不读取账户、本机草稿或云端方案；确认后再接入 ClipStudio 的 SwiftUI 模块。</p>
+<script>/* CALC */</script><script>/* INTERACTION */</script>
+</body></html>

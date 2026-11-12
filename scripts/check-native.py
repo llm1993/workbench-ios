@@ -134,6 +134,7 @@ workflow=yaml.safe_load((root/'.github/workflows/ios.yml').read_text(encoding='u
 assert 'push' not in workflow.get('on',workflow.get(True))
 for name in ('calc.js','rates.js'):
     assert (root/'ClipStudio/Resources/Mortgage'/name).read_bytes()==(reference/'frontend/mortgage'/name).read_bytes()
+assert (root/'ClipStudio/Resources/Salary/salary.js').read_bytes()==(root/'Design/salary-v1/salary.js').read_bytes()
 manifest=json.loads((root/'Modules/weidu-source.json').read_text())
 changed=[]
 for f in manifest['files']:
@@ -145,6 +146,6 @@ assert set(changed)==set(overrides),changed
 for failure in failures:print(failure)
 print(f'{len(files)} Swift files parsed; {len(set(p[0] for p in paths))} API path patterns checked against local backend routes.')
 print(f'{len(known)} parser limitation(s) also present in unchanged upstream code: {known}')
-print('Reader source provenance, mortgage resources, opaque 1024px AppIcon and manual-only workflow verified.')
+print('Reader source provenance, mortgage and salary resources, opaque 1024px AppIcon and manual-only workflow verified.')
 print('This is not Swift typechecking, Xcode compilation, simulator or device acceptance.')
 sys.exit(bool(failures))
