@@ -129,7 +129,7 @@ struct SalaryControls: View {
         }
     }
 
-    private var chips: some View {
+    @ViewBuilder private var chips: some View {
         SalaryToggleChip(title: "继续教育 400/月", selected: draft["study"].flag, action: { edit("study", .bool(!draft["study"].flag)) }, identifier: "salary-study")
         SalaryToggleChip(title: "扣除标准 ›", selected: false, action: standards, identifier: "salary-standards")
     }

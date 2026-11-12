@@ -187,7 +187,7 @@ struct SalarySheetView: View {
             }
         }
     }
-    private var exportActions: some View {
+    @ViewBuilder private var exportActions: some View {
         SalaryPrimaryButton(title: "复制", symbol: "doc.on.doc", action: copy, filled: false, identifier: "salary-sheet-copy")
         SalaryPrimaryButton(title: "下载 .txt", symbol: "square.and.arrow.up", action: export, identifier: "salary-sheet-download")
     }

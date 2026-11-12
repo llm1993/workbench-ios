@@ -135,7 +135,7 @@ struct SalaryChartPanel: View {
                 .padding(.horizontal, 11).frame(minHeight: 44).background(SalaryStyle.tint, in: Capsule())
         }.buttonStyle(.plain).accessibilityIdentifier("salary-year-detail")
     }
-    private var legendLabels: some View {
+    @ViewBuilder private var legendLabels: some View {
         ForEach(legend) { kind in
             HStack(spacing: 5) {
                 Circle().fill(SalaryStyle.color(kind)).frame(width: 7, height: 7).accessibilityHidden(true)

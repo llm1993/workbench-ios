@@ -58,7 +58,7 @@ struct SalarySlipScene: View {
         }.accessibilityIdentifier("salary-tax")
     }
 
-    private var actions: some View {
+    @ViewBuilder private var actions: some View {
         SalaryPrimaryButton(title: "复制工资条", symbol: "doc.on.doc", action: copy, filled: false, identifier: "salary-copy")
         SalaryPrimaryButton(title: "导出文本", symbol: "square.and.arrow.up", action: export, identifier: "salary-download")
     }
