@@ -15,11 +15,18 @@ SwiftUI 原生到手工资计算器，不使用 WKWebView。计算全部在设�
 
 设计预览已在浏览器通过 62 项断言（三种场景、参数编辑、跳档与盲区、深色、320px 大字号无横向溢出），未记录脚本错误；结果保存在 `Design/salary-v1/verification.json`。
 
-Windows 本次运行 52 项计算检查、8 项原生适配器检查通过，117 个 Swift 文件语法检查通过。新增 `Tests/SalaryTests.swift`（11 项）与 `UITests/SalaryInterfaceTests.swift`（5 项），**这两套 XCTest 尚未在 Xcode 上执行**。
+Windows 本次运行 52 项计算检查、8 项原生适配器检查通过，117 个 Swift 文件语法检查通过。新增 `Tests/SalaryTests.swift`（11 项）与 `UITests/SalaryInterfaceTests.swift`（5 项），两套 XCTest 已在下方记录的 macOS 完整构建中执行并通过。
 
 ### 原生构建记录
 
-本次提交把源码版本提升到 **0.3.9（13）**，尚未执行 macOS 构建。产品源码有变更，按 [构建策略](../scripts/ios-build-policy.py) 不能复用旧的验证运行，需要重新触发手动 `iOS Build` 的 `full` 模式；运行地址、提交号、测试数量、IPA 路径与哈希在验收后补记于此。
+2026-11-13 的 [完整 iOS 构建 #13](https://github.com/llm1993/workbench-ios/actions/runs/43354596126) 对产品源码 `5c9ee2fea258f0ee3686aaa0ab8fda630f5bf836` 执行 `full` 验证并成功生成 **0.3.9（13）** 未签名 IPA：
+
+- 应用单元测试 106 项、阅读模块单元测试 65 项，全部通过；其中工资计算测试 11 项，覆盖示例数字、累计预扣跳档与负零、年终奖档位与盲区、社保夹取、图表口径、未入职月份、offer 与涨薪、工资条文本和本地模块注册。
+- 界面测试 48 项全部通过；其中工资界面测试 5 项，覆盖三场景可达与重算、工资条算式与单位成本、对比场景、弹层套用方案与跳月、辅助字号可达性。
+- 原生测试、iPhone arm64 Release 编译和 IPA 打包均在同一次运行完成，没有复用其他源码的测试记录。
+- `validation` 附件保留 `tests.log`、`simulator.log`、`validation-summary.json` 和 18 张工资 XCTest 原生截图（`screenshots/manifest.json` 对号）。截图使用测试示例数据；模拟器验收不能替代物理设备试装。
+- 下载后复核 IPA：版本 0.3.9（13）、标识 `com.example.workbench`、iOS 17 最低版本、arm64、未签名；SHA256 `e189aaa3c5ebe47c1eb0b685d792bcb061097469e43d2f61a3c8875e4c3fffad`，本地交付路径 `D:\git\Termux\scratch\ipa\ClipStudio-unsigned.ipa`。安装需先用 Sideloadly 等工具以自有 Apple ID 重签（免费账号 7 天需重签）。
+- 已人工逐张复核浅色、深色、辅助字号、参数编辑、工资条（含单位缴纳与个税算式）、对比与弹层的原生截图，并手算核对到手、扣除、累计预扣与年终奖择优数字；三个底部导航图标正常显示，大字号无横向溢出。
 
 ## 界面与数据边界
 
