@@ -18,10 +18,11 @@ struct WorkspaceModule: Decodable, Identifiable {
         case "clip": return "doc.on.clipboard"
         case "stock": return "chart.xyaxis.line"
         case "mortgage": return "house"
+        case "salary": return "yensign.circle"
         default: return "square.grid.2x2"
         }
     }
-    var available: Bool { ["clip", "weidu", "youshu", "stock", "mortgage"].contains(key) }
+    var available: Bool { ["clip", "weidu", "youshu", "stock", "mortgage", "salary"].contains(key) }
 }
 
 struct WorkspaceProfile: Decodable {
@@ -38,11 +39,13 @@ struct WorkspaceAppLayout: Decodable {
 }
 
 enum WorkspaceApp: String, Identifiable, CaseIterable {
-    case youshu, weidu, clip, stock, mortgage
+    case youshu, weidu, clip, stock, mortgage, salary
     var id: String { rawValue }
 }
 
 struct WorkspaceView: View {
+    private static let localModule = WorkspaceModule(key: "salary", name: "到手工资",
+                                                     desc: "税前到到手 · 逐月工资条 · 年终奖择优", hidden: false)
     @EnvironmentObject private var store: ClipStore
     @Environment(\.scenePhase) private var phase
     @State private var profile: WorkspaceProfile?
@@ -90,10 +93,15 @@ struct WorkspaceView: View {
                 Text("日常应用").font(.subheadline).foregroundStyle(Theme.text2)
                 if let failure { NativeFailure(message: failure); Button("重试") { Task { await load() } } }
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
-                    ForEach(profile?.apps.filter { !$0.hidden } ?? []) { module in
+                    ForEach(profile?.apps.filter { !$0.hidden && $0.key != "salary" } ?? []) { module in
                         if let app = WorkspaceApp(rawValue: module.key) {
                             Button { clipboardAction = nil; application = app } label: { moduleTile(module) }.buttonStyle(GlassPressStyle())
                         }
+                    }
+                    // 到手工资只在本机算，没有服务端权限可管，所以不进 /api/auth/me 的应用清单，固定排在门厅最后。
+                    if profile != nil {
+                        Button { clipboardAction = nil; application = .salary } label: { moduleTile(Self.localModule) }
+                            .buttonStyle(GlassPressStyle()).accessibilityIdentifier("home-app-salary")
                     }
                 }
                 if loading && profile == nil { ProgressView("正在载入应用…").frame(maxWidth: .infinity, minHeight: 220) }
@@ -101,7 +109,7 @@ struct WorkspaceView: View {
         }.refreshable { await load() }
     }
     private func moduleTile(_ module: WorkspaceModule) -> some View {
-        let colors: [String: Color] = ["youshu": Color(hex: 0x397869), "weidu": Color(hex: 0xB07948), "clip": Color(hex: 0x5280B1), "stock": Color(hex: 0x7765A0), "mortgage": Color(hex: 0x718855)]
+        let colors: [String: Color] = ["youshu": Color(hex: 0x397869), "weidu": Color(hex: 0xB07948), "clip": Color(hex: 0x5280B1), "stock": Color(hex: 0x7765A0), "mortgage": Color(hex: 0x718855), "salary": Color(hex: 0x10635A)]
         let color = colors[module.key] ?? Theme.accent
         return VStack(alignment: .leading, spacing: 18) {
             Image(systemName: module.icon).font(.system(size: 24, weight: .medium)).foregroundStyle(color)

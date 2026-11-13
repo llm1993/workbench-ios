@@ -49,7 +49,10 @@ final class InterfaceTests: XCTestCase {
     }
     private func check(_ module: String, ready: String, dark: Bool = false) {
         let app = launch(module, dark: dark)
-        let content = module == "weidu" ? app.buttons["entry-preview-0"] : app.staticTexts[ready]
+        let content: XCUIElement
+        if module == "weidu" { content = app.buttons["entry-preview-0"] }
+        else if module == "mortgage" { content = app.buttons["mortgage-input-toggle"] }
+        else { content = app.staticTexts[ready] }
         XCTAssertTrue(content.waitForExistence(timeout: 15))
         capture(app, name: module + (dark ? "-dark" : "-light"))
         XCTAssertFalse(app.navigationBars["工作台"].staticTexts["工作台"].isHittable)
@@ -66,7 +69,7 @@ final class InterfaceTests: XCTestCase {
     func testReader() { check("weidu", ready: "把注意力还给真正喜欢的事") }
     func testAssets() { check("youshu", ready: "物品净值") }
     func testStock() { check("stock", ready: "判断表现") }
-    func testMortgage() { check("mortgage", ready: "贷款") }
+    func testMortgage() { check("mortgage", ready: "贷款参数") }
     func testClipboardDark() { check("clip", ready: "最近内容", dark: true) }
     func testReaderDark() { check("weidu", ready: "把注意力还给真正喜欢的事", dark: true) }
 

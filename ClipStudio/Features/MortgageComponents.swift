@@ -1,17 +1,17 @@
 import SwiftUI
 
 enum MortgageStyle {
-    static let background = Color.dynamic(light: 0xF3F6F5, dark: 0x151F1A)
-    static let surface = Color.dynamic(light: 0xFFFFFF, dark: 0x1D2A23)
-    static let input = Color.dynamic(light: 0xF7F9F8, dark: 0x25352D)
-    static let text = Color.dynamic(light: 0x203D33, dark: 0xE5EEE8)
-    static let secondary = Color.dynamic(light: 0x63736C, dark: 0xB0C2B7)
-    static let line = Color.dynamic(light: 0xE2E9E5, dark: 0x35483C)
-    static let accent = Color.dynamic(light: 0x245C4D, dark: 0x9DC9B5)
-    static let tint = Color.dynamic(light: 0xE8F0EC, dark: 0x2C4235)
-    static let hero = Color.dynamic(light: 0x245C4D, dark: 0x264D40)
-    static let firstSeries = Color.dynamic(light: 0x237E5B, dark: 0x299A70)
-    static let secondSeries = Color.dynamic(light: 0x9670C5, dark: 0x9670C5)
+    static let background = Color.dynamic(light: 0xF6F5F0, dark: 0x171C19)
+    static let surface = Color.dynamic(light: 0xFFFFFF, dark: 0x212823)
+    static let input = Color.dynamic(light: 0xF5F5F0, dark: 0x2A332D)
+    static let text = Color.dynamic(light: 0x263D32, dark: 0xEBF0E9)
+    static let secondary = Color.dynamic(light: 0x6B756D, dark: 0xB1BDB2)
+    static let line = Color.dynamic(light: 0xE7E9E1, dark: 0x39453C)
+    static let accent = Color.dynamic(light: 0x315E48, dark: 0xB8D7B3)
+    static let tint = Color.dynamic(light: 0xEDF2E8, dark: 0x2F4032)
+    static let hero = Color.dynamic(light: 0x315E48, dark: 0x365B44)
+    static let firstSeries = Color.dynamic(light: 0x48765A, dark: 0xA2C99E)
+    static let secondSeries = Color.dynamic(light: 0xA6743A, dark: 0xD4AC73)
     static func series(_ slot: Int) -> Color { slot == 0 ? firstSeries : secondSeries }
 }
 
@@ -21,8 +21,8 @@ struct MortgagePanel<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) { content }
             .frame(maxWidth: .infinity, alignment: .leading).padding(padding)
-            .background(MortgageStyle.surface, in: RoundedRectangle(cornerRadius: 20))
-            .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(MortgageStyle.line, lineWidth: 0.7) }
+            .background(MortgageStyle.surface, in: RoundedRectangle(cornerRadius: 24))
+            .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(MortgageStyle.line, lineWidth: 0.7) }
     }
 }
 
@@ -43,16 +43,16 @@ struct MortgageSegment: View {
             } else {
                 HStack(spacing: 4) { choices }
             }
-        }.padding(4).background(MortgageStyle.input, in: RoundedRectangle(cornerRadius: 11))
+        }.padding(4).background(MortgageStyle.input, in: RoundedRectangle(cornerRadius: 14))
             .accessibilityElement(children: .contain).accessibilityLabel(title)
     }
     private var choices: some View {
         ForEach(options) { option in
             Button { selection = option.id } label: {
                 Text(option.title).font(.subheadline.weight(selection == option.id ? .semibold : .regular))
-                    .foregroundStyle(selection == option.id ? MortgageStyle.accent : MortgageStyle.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 40).padding(.horizontal, 3)
-                    .background(selection == option.id ? MortgageStyle.surface : .clear, in: RoundedRectangle(cornerRadius: 8))
+                    .foregroundStyle(selection == option.id ? MortgageStyle.text : MortgageStyle.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 44).padding(.horizontal, 3)
+                    .background(selection == option.id ? MortgageStyle.surface : .clear, in: RoundedRectangle(cornerRadius: 11))
             }.buttonStyle(.plain)
                 .accessibilityAddTraits(selection == option.id ? .isSelected : [])
                 .accessibilityIdentifier("mortgage-option-" + option.id)
@@ -69,15 +69,16 @@ struct MortgageNumberField: View {
     var identifier = ""
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.subheadline).foregroundStyle(MortgageStyle.text)
+            Text(title).font(.subheadline).foregroundStyle(MortgageStyle.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 TextField(title, text: $value).keyboardType(keyboard)
-                    .font(prominent ? .system(.largeTitle, design: .default).weight(.medium) : .body)
+                    .font(prominent ? .system(.largeTitle, design: .rounded).weight(.semibold) : .body)
+                    .monospacedDigit()
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                     .accessibilityLabel(title).accessibilityIdentifier(identifier)
                 if !unit.isEmpty { Text(unit).font(.caption).foregroundStyle(MortgageStyle.secondary) }
             }.padding(prominent ? 0 : 12).frame(minHeight: prominent ? 53 : 46)
-                .background(prominent ? .clear : MortgageStyle.input, in: RoundedRectangle(cornerRadius: 10))
+                .background(prominent ? .clear : MortgageStyle.input, in: RoundedRectangle(cornerRadius: 13))
                 .overlay(alignment: .bottom) { if prominent { Rectangle().fill(MortgageStyle.line).frame(height: 1) } }
         }
     }
@@ -206,63 +207,117 @@ struct MortgageSummaryCard: View {
     let presentation: MortgagePresentation
     let actionTitle: String
     let action: () -> Void
-    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 54
+    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 52
     @Environment(\.dynamicTypeSize) private var typeSize
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 16) {
                 ViewThatFits(in: .horizontal) {
                     HStack { paymentTitle; Spacer(); badge }
                     VStack(alignment: .leading, spacing: 8) { paymentTitle; badge }
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Text("¥").font(.title2).foregroundStyle(.white.opacity(0.78))
+                    Text("¥").font(.title2.weight(.medium)).foregroundStyle(MortgageStyle.secondary).accessibilityHidden(true)
                     Text(MortgageDisplay.money(presentation.payment))
-                        .font(.system(size: heroSize, weight: .semibold)).tracking(-1.5)
+                        .font(.system(size: heroSize, weight: .semibold, design: .rounded)).tracking(-1.5)
+                        .monospacedDigit()
                         .lineLimit(1).minimumScaleFactor(0.45)
                         .accessibilityIdentifier("mortgage-monthly-payment")
-                }.accessibilityElement(children: .combine)
+                        .accessibilityLabel("人民币 " + MortgageDisplay.money(presentation.payment) + " 元")
+                }
                 Text(presentation.metadata.joined(separator: "  /  "))
-                    .font(.caption).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
-            }.frame(maxWidth: .infinity, alignment: .leading).padding(24).foregroundStyle(.white)
-                .background(MortgageStyle.hero)
-                .overlay(alignment: .bottomTrailing) { Image(systemName: "house").font(.system(size: 64, weight: .ultraLight)).foregroundStyle(.white.opacity(0.1)).padding(22).accessibilityHidden(true).allowsHitTesting(false) }
+                    .font(.caption).foregroundStyle(MortgageStyle.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            if !presentation.isCurrent && !presentation.prepayment {
+                MortgageCostBar(principal: presentation.calculation["total"].double, interest: presentation.result["interest"].double)
+            }
             Group {
                 if typeSize.isAccessibilitySize {
-                    VStack(spacing: 16) { ForEach(presentation.metrics) { metric in HStack { Text(metric.title); Spacer(); Text(metric.value + " " + metric.unit).fontWeight(.semibold) } } }.font(.body)
+                    VStack(alignment: .leading, spacing: 16) {
+                        ForEach(presentation.metrics) { metric in
+                            ViewThatFits(in: .horizontal) {
+                                HStack { Text(metric.title); Spacer(); Text(metric.value + " " + metric.unit).fontWeight(.semibold) }
+                                VStack(alignment: .leading, spacing: 5) { Text(metric.title); Text(metric.value + " " + metric.unit).fontWeight(.semibold) }
+                            }.accessibilityElement(children: .combine)
+                        }
+                    }.font(.body)
                 } else {
                     HStack(alignment: .top, spacing: 12) {
                         ForEach(Array(presentation.metrics.enumerated()), id: \.element.id) { index, metric in
-                            if index > 0 { Rectangle().fill(MortgageStyle.line).frame(width: 1, height: 45) }
+                            if index > 0 { Rectangle().fill(MortgageStyle.line).frame(width: 1, height: 40).accessibilityHidden(true) }
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(metric.title).font(.caption).foregroundStyle(MortgageStyle.secondary)
                                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                                    Text(metric.value).font(.system(.title3, design: .default).weight(.semibold)).lineLimit(1).minimumScaleFactor(0.65)
+                                    Text(metric.value).font(.system(.title3, design: .rounded).weight(.semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.65)
                                     Text(metric.unit).font(.caption2).foregroundStyle(MortgageStyle.secondary)
                                 }
                             }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
                         }
                     }
                 }
-            }.padding(20)
-            Rectangle().fill(MortgageStyle.line).frame(height: 0.7)
+            }
+            Divider().overlay(MortgageStyle.line)
             Button(action: action) {
                 HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "info.circle").padding(.top, 2)
+                    Image(systemName: "arrow.left.arrow.right").foregroundStyle(MortgageStyle.accent).padding(.top, 2).accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 7) {
                         Text(presentation.insight).foregroundStyle(MortgageStyle.secondary)
                         Text(actionTitle).foregroundStyle(MortgageStyle.accent).fontWeight(.medium)
                     }.frame(maxWidth: .infinity, alignment: .leading)
                     Image(systemName: "chevron.right").font(.caption2).padding(.top, 3)
-                }.font(.caption).frame(minHeight: 44, alignment: .center).padding(.horizontal, 20).padding(.vertical, 10)
+                }.font(.caption).frame(minHeight: 44, alignment: .center)
             }.buttonStyle(.plain).accessibilityIdentifier("mortgage-result-action")
-        }.background(MortgageStyle.surface).clipShape(RoundedRectangle(cornerRadius: 20))
-            .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(MortgageStyle.line, lineWidth: 0.7) }
+        }.padding(24).background(MortgageStyle.surface, in: RoundedRectangle(cornerRadius: 26))
+            .overlay { RoundedRectangle(cornerRadius: 26).strokeBorder(MortgageStyle.line, lineWidth: 0.7) }
     }
-    private var paymentTitle: some View { Text(presentation.paymentTitle).font(.subheadline).foregroundStyle(.white.opacity(0.9)) }
+    private var paymentTitle: some View { Text(presentation.paymentTitle).font(.subheadline).foregroundStyle(MortgageStyle.secondary) }
     private var badge: some View {
-        Text(presentation.badge).font(.caption).padding(.horizontal, 8).padding(.vertical, 4)
-            .overlay { RoundedRectangle(cornerRadius: 6).strokeBorder(.white.opacity(0.35), lineWidth: 0.7) }
+        Text(presentation.badge).font(.caption.weight(.medium)).foregroundStyle(MortgageStyle.accent)
+            .padding(.horizontal, 10).padding(.vertical, 6).background(MortgageStyle.tint, in: Capsule())
+    }
+}
+
+struct MortgageCostBar: View {
+    let principal: Double
+    let interest: Double
+    private var fraction: Double {
+        let total = principal + interest
+        guard total.isFinite, total > 0 else { return 0 }
+        return min(1, max(0, principal / total))
+    }
+    var body: some View {
+        VStack(spacing: 8) {
+            GeometryReader { geometry in
+                HStack(spacing: fraction > 0 && fraction < 1 ? 3 : 0) {
+                    if fraction > 0 { Capsule().fill(MortgageStyle.firstSeries).frame(width: max(0, geometry.size.width - (fraction < 1 ? 3 : 0)) * fraction) }
+                    if fraction < 1 { Capsule().fill(MortgageStyle.secondSeries.opacity(0.65)) }
+                }
+            }.frame(height: 6).accessibilityHidden(true)
+            ViewThatFits(in: .horizontal) {
+                HStack { principalLabel; Spacer(); interestLabel }
+                VStack(alignment: .leading, spacing: 6) { principalLabel; interestLabel }
+            }
+        }.accessibilityElement(children: .ignore)
+            .accessibilityLabel("本金占累计还款的 \(MortgageDisplay.number(fraction * 100, decimals: 1))%，其余为利息")
+    }
+    private var principalLabel: some View {
+        Text("本金 \(MortgageDisplay.number(fraction * 100, decimals: 1))%")
+            .font(.caption2).foregroundStyle(MortgageStyle.secondary)
+    }
+    private var interestLabel: some View {
+        Text("利息 \(MortgageDisplay.number((1 - fraction) * 100, decimals: 1))%")
+            .font(.caption2).foregroundStyle(MortgageStyle.secondary)
+    }
+}
+
+struct MortgageQuickFact: View {
+    let title: String
+    let value: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title).font(.caption).foregroundStyle(MortgageStyle.secondary)
+            Text(value).font(.system(.subheadline, design: .rounded).weight(.semibold)).monospacedDigit()
+        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
     }
 }
 
@@ -274,12 +329,12 @@ struct MortgageStrategyOption: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: selected ? "largecircle.fill.circle" : "circle").font(.title3).foregroundStyle(MortgageStyle.accent)
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle").font(.title3).foregroundStyle(MortgageStyle.accent).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 5) { Text(title).font(.subheadline.weight(.semibold)); Text(detail).font(.caption).foregroundStyle(MortgageStyle.secondary) }
                 Spacer(minLength: 0)
             }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(14)
-                .background(selected ? MortgageStyle.tint : MortgageStyle.input, in: RoundedRectangle(cornerRadius: 12))
-                .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(selected ? MortgageStyle.accent.opacity(0.5) : MortgageStyle.line, lineWidth: 1) }
+                .background(selected ? MortgageStyle.tint : MortgageStyle.input, in: RoundedRectangle(cornerRadius: 16))
+                .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(selected ? MortgageStyle.accent.opacity(0.5) : .clear, lineWidth: 1) }
         }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

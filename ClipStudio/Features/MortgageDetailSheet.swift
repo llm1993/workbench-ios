@@ -78,13 +78,14 @@ struct MortgageDetailSheet: View {
         let alternative = MortgagePresentation(kind: presentation.kind, draft: presentation.draft, calculation: presentation.calculation, prepayment: strategies, strategy: key)
         let payment = strategies ? alternative.payment : result["rows"][0]["payment"]
         return MortgagePanel(padding: 15) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 9) {
+                Image(systemName: chosen ? "checkmark.circle.fill" : "circle").font(.title3).foregroundStyle(chosen ? MortgageStyle.accent : MortgageStyle.secondary).accessibilityHidden(true)
                 Text(title).font(.headline)
-                Text(chosen ? "当前选择" : "可选方案").font(.caption2).foregroundStyle(MortgageStyle.secondary)
+                Text(chosen ? "当前选择" : "可选方案").font(.caption2).foregroundStyle(chosen ? MortgageStyle.accent : MortgageStyle.secondary)
             }
             VStack(alignment: .leading, spacing: 5) {
                 Text(strategies ? "提前还款后月供" : key == "principal" ? "首月还款" : "每月还款").font(.caption).foregroundStyle(MortgageStyle.secondary)
-                Text("¥ " + MortgageDisplay.money(payment)).font(.title2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.55)
+                Text("¥ " + MortgageDisplay.money(payment)).font(.system(.title2, design: .rounded).weight(.semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.55)
             }
             Divider().overlay(MortgageStyle.line)
             if strategies {
@@ -100,7 +101,7 @@ struct MortgageDetailSheet: View {
                 dismiss()
             } label: {
                 Text(chosen ? "已选用" : "选用此方式").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44)
-                    .background(chosen ? MortgageStyle.input : MortgageStyle.tint, in: RoundedRectangle(cornerRadius: 9))
+                    .background(MortgageStyle.tint, in: RoundedRectangle(cornerRadius: 12))
             }.buttonStyle(.plain).foregroundStyle(MortgageStyle.accent).accessibilityIdentifier("mortgage-choose-" + key)
         }.frame(maxWidth: .infinity, alignment: .topLeading)
     }

@@ -13,6 +13,7 @@ struct ModuleScene: View {
             case .youshu: navigation { AssetsView() }
             case .stock: navigation { StockView() }
             case .mortgage: navigation { MortgageView() }
+            case .salary: navigation { SalaryView() }
             }
         }.background(Theme.background)
     }

@@ -34,13 +34,13 @@ struct MortgageBalanceChart: View {
                         }
                     }
                 } else { Text("按住曲线，查看每期剩余本金").font(.caption).foregroundStyle(MortgageStyle.secondary) }
-            }.frame(maxWidth: .infinity, minHeight: 56, alignment: .topLeading)
+            }.frame(maxWidth: .infinity, minHeight: selectedMonth == nil ? 24 : 56, alignment: .topLeading)
                 .accessibilityIdentifier("mortgage-chart-readout")
             Divider().overlay(MortgageStyle.line)
             HStack {
                 Text("单位：万元").font(.caption).foregroundStyle(MortgageStyle.secondary)
                 Spacer()
-                Button("查看数据", action: showData).font(.caption).frame(minHeight: 36)
+                Button("查看数据", action: showData).font(.caption.weight(.medium)).frame(minHeight: 44)
                     .accessibilityIdentifier("mortgage-chart-data")
             }
         }.onChange(of: series) { _, _ in selectedMonth = nil }
@@ -52,7 +52,10 @@ struct MortgageBalanceChart: View {
         }
     }
     private var scheduleButton: some View {
-        Button(action: schedule) { Label("还款明细", systemImage: "chevron.right").font(.caption).frame(minHeight: 36) }
+        Button(action: schedule) {
+            Label("还款明细", systemImage: "chevron.right").font(.caption.weight(.medium))
+                .padding(.horizontal, 11).frame(minHeight: 44).background(MortgageStyle.tint, in: Capsule())
+        }.buttonStyle(.plain)
             .accessibilityIdentifier("mortgage-schedule")
     }
     private var legend: some View {
@@ -69,6 +72,10 @@ struct MortgageBalanceChart: View {
         Chart {
             ForEach(series) { item in
                 ForEach(item.points) { point in
+                    if item.slot == 0 {
+                        AreaMark(x: .value("期数", point.month), y: .value("剩余本金（万元）", point.balance / 10_000))
+                            .foregroundStyle(MortgageStyle.firstSeries.opacity(0.07)).accessibilityHidden(true)
+                    }
                     LineMark(x: .value("期数", point.month), y: .value("剩余本金（万元）", point.balance / 10_000))
                         .foregroundStyle(by: .value("还款计划", item.title))
                         .lineStyle(StrokeStyle(lineWidth: 2, dash: item.slot == 0 ? [] : [5, 4]))
@@ -88,7 +95,7 @@ struct MortgageBalanceChart: View {
                     }
                 }
             }
-        }.frame(height: typeSize.isAccessibilitySize ? 270 : 195)
+        }.frame(height: typeSize.isAccessibilitySize ? 270 : 180)
             .chartForegroundStyleScale(domain: series.map(\.title), range: series.map { MortgageStyle.series($0.slot) })
             .chartLegend(.hidden).chartXScale(domain: 0...max(1, months))
             .chartYScale(domain: .automatic(includesZero: true))

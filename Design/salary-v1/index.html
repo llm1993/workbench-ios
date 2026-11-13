@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>到手工资 · iOS 子应用界面预览</title>
+<style>:root{color-scheme:light;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#e9eae3;color:#1c2b28}
+*{box-sizing:border-box}
+body{margin:0;padding:22px 16px 20px;background:
+  radial-gradient(900px 420px at 12% -8%,#10635a14,transparent 60%),
+  radial-gradient(700px 380px at 92% 4%,#c8891b12,transparent 62%),#e9eae3}
+button,input,select{font:inherit}button{cursor:pointer;color:inherit;background:transparent;border:0}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid #10635a;outline-offset:3px;border-radius:8px}
+[hidden]{display:none!important}.symbols{position:absolute;width:0;height:0;overflow:hidden}
+h1,h2,h3,p{margin:0}h2{font-size:16px;font-weight:600}h3{font-size:14px;font-weight:600}
+svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+.preview-tools{max-width:390px;margin:0 auto 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:11px;color:#5f6d68}
+.preview-tools>div{display:flex;gap:5px}
+.preview-tools button{padding:7px 10px;border:1px solid #c6cec7;border-radius:8px;font-size:11px;white-space:nowrap;background:#f4f4ee}
+.preview-tools button[aria-pressed=true]{background:#10635a;color:#fff;border-color:#10635a}
+
+.phone{
+  --bg:#f2f1ea;--surface:#fffdf9;--input:#f3f2ea;--ink:#1c2b28;--sub:#6b7873;--line:#e4e5dc;--line2:#d3d6ca;
+  --accent:#10635a;--tint:#e3eeea;--on-accent:#fff;
+  --net:#0e7c66;--tax:#c4453c;--si:#2f6bd0;--fund:#c8891b;--other:#6d5aa8;
+  --net-soft:#0e7c6618;--tax-soft:#c4453c18;--si-soft:#2f6bd018;--fund-soft:#c8891b1a;--other-soft:#6d5aa818;
+  position:relative;display:flex;flex-direction:column;width:390px;max-width:100%;height:min(844px,calc(100dvh - 118px));min-height:560px;
+  margin:auto;border-radius:36px;overflow:hidden;border:1px solid #d5d9cd;background:var(--bg);color:var(--ink);
+  box-shadow:0 18px 50px #12332c1a,0 2px 6px #12332c0f;font-size:14px;line-height:1.5;isolation:isolate}
+.phone::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(520px 260px at 84% -6%,#10635a12,transparent 66%),
+  radial-gradient(420px 240px at -10% 22%,#c8891b10,transparent 64%)}
+.phone.dark{color-scheme:dark;
+  --bg:#101615;--surface:#18211f;--input:#212c29;--ink:#e9f0ed;--sub:#a3b1ac;--line:#2c3a36;--line2:#3b4c47;
+  --accent:#7fd3c2;--tint:#1e332f;--on-accent:#0d1a18;
+  --net:#4fcba8;--tax:#f08a80;--si:#7fb0f5;--fund:#e9b75c;--other:#b3a2e8;
+  --net-soft:#4fcba822;--tax-soft:#f08a8022;--si-soft:#7fb0f522;--fund-soft:#e9b75c22;--other-soft:#b3a2e822;
+  border-color:#26332f;box-shadow:0 18px 50px #00000055}
+.phone.dark::before{background:radial-gradient(520px 260px at 84% -6%,#7fd3c214,transparent 66%),radial-gradient(420px 240px at -10% 22%,#e9b75c0e,transparent 64%)}
+.phone>*{position:relative;z-index:1}
+
+.status-bar{display:flex;align-items:center;justify-content:space-between;padding:15px 28px 6px;font-size:13px;flex-shrink:0}
+.status-bar span{font-size:12px;letter-spacing:2px}
+.app-toolbar{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 18px 4px;flex-shrink:0;font-size:15px;font-weight:600}
+.toolbar-icon{color:var(--accent);display:flex;width:60px}
+.app-toolbar .toolbar-action{display:flex;align-items:center;justify-content:flex-end;gap:5px;color:var(--accent);padding:9px 0;font-size:13px;font-weight:500;width:60px}
+.app-toolbar .toolbar-action svg{width:17px;height:17px}
+
+.app-scroll{overflow:auto;flex:1;min-height:0;padding:10px 18px 26px;display:flex;flex-direction:column;gap:16px;
+  scrollbar-width:thin;scrollbar-color:var(--accent) transparent;scroll-behavior:smooth}
+.app-scroll::-webkit-scrollbar{width:5px}
+.app-scroll::-webkit-scrollbar-track{background:transparent;margin:6px 0}
+.app-scroll::-webkit-scrollbar-thumb{background:#10635a55;border-radius:6px}
+.app-scroll::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.phone.dark .app-scroll::-webkit-scrollbar-thumb{background:#7fd3c255}
+.phone.dark .app-scroll::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.app-scroll>*{flex-shrink:0}
+.scene{display:flex;flex-direction:column;gap:16px}
+
+.page-heading{padding:4px 2px 0}
+.page-heading>div{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.page-heading h1{font-size:29px;font-weight:600;letter-spacing:-.8px}
+.page-heading p{font-size:12.5px;color:var(--sub);margin-top:6px}
+.badge{font-size:10.5px;color:var(--accent);background:var(--tint);display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:40px;white-space:nowrap}
+.badge svg{width:12px;height:12px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:18px}
+.pill{display:inline-flex;justify-content:center;align-items:center;gap:4px;padding:5px 10px;border-radius:30px;color:var(--accent);background:var(--tint);font-size:10.5px;font-weight:600;white-space:nowrap}
+.pill.warn{color:var(--fund);background:var(--fund-soft)}
+.pill.tax{color:var(--tax);background:var(--tax-soft)}
+.num{font-variant-numeric:tabular-nums}
+.rnd{font-family:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+
+/* ── 工资条主卡：上半联是到手，虚线撕口下面是税前去向 ── */
+.slip{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:26px;overflow:hidden;
+  box-shadow:0 6px 22px #12332c0d}
+.slip-head{padding:18px 20px 13px;background:linear-gradient(158deg,var(--tint),transparent 78%)}
+.slip-caption{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+.slip-month{display:inline-flex;align-items:center;gap:5px;color:var(--accent);font-weight:600}
+.slip-month svg{width:13px;height:13px}
+.slip-value{display:flex;align-items:baseline;gap:6px;margin-top:8px;line-height:1.05}
+.slip-value>span{font-size:20px;color:var(--sub);font-weight:500}
+.slip-value strong{font-size:44px;letter-spacing:-1.8px;font-weight:600;white-space:nowrap}
+.slip-sub{font-size:11px;color:var(--sub);margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 8px}
+.slip-sub b{color:var(--ink);font-weight:600}
+.tear{position:relative;height:18px;background:var(--surface)}
+.tear::before{content:"";position:absolute;left:16px;right:16px;top:8px;border-top:2px dashed var(--line2)}
+.tear i{position:absolute;top:0;width:18px;height:18px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
+.tear i:first-child{left:-10px}.tear i:last-child{right:-10px}
+.slip-body{padding:2px 20px 16px;background:var(--surface)}
+.flow{display:flex;flex-direction:column;gap:8px}
+.flow-row{display:flex;align-items:center;gap:9px;font-size:12.5px}
+.flow-row .dot{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.flow-row .name{flex:1;color:var(--sub);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flow-row .amt{font-weight:600;font-variant-numeric:tabular-nums}
+.flow-row.total{border-top:1px solid var(--line);padding-top:11px;margin-top:3px;font-size:13px}
+.flow-row.total .name{color:var(--ink);font-weight:600}
+.share{display:flex;gap:3px;height:8px;margin:13px 0 8px}
+.share span{border-radius:6px;min-width:2px;transition:width .35s cubic-bezier(.22,.7,.3,1)}
+.share-labels{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:10px;color:var(--sub)}
+.share-labels span{display:inline-flex;align-items:center;gap:5px}
+.share-labels i{width:7px;height:7px;border-radius:2px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
+.metric{min-width:0}
+.metric+.metric{border-left:1px solid var(--line);padding-left:11px}
+.metric>span{font-size:10px;color:var(--sub);display:block;margin-bottom:5px}
+.metric strong{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.metric small{font-size:9px;color:var(--sub);margin-left:2px}
+.insight{display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;margin-top:13px;padding-top:13px;border-top:1px solid var(--line);min-height:44px;font-size:11px}
+.insight>svg{width:16px;height:16px;color:var(--accent);margin-top:2px}
+.insight>span:nth-child(2){flex:1;color:var(--sub)}
+.insight b{display:block;color:var(--accent);font-weight:600;margin-top:6px;font-size:11.5px}
+.insight>span:last-child{font-size:17px;color:var(--accent);line-height:1}
+.notice{display:flex;gap:8px;font-size:11px;line-height:1.6;color:var(--fund);background:var(--fund-soft);border-radius:14px;padding:12px 13px}
+.notice svg{width:15px;height:15px;margin-top:1px}
+
+/* 滚动后出现的迷你结果条 */
+.sticky-net{position:absolute;left:12px;right:12px;top:84px;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);box-shadow:0 8px 22px #12332c1f;
+  font-size:11px;color:var(--sub);opacity:0;transform:translateY(-10px);pointer-events:none;transition:opacity .22s,transform .22s}
+.sticky-net.on{opacity:1;transform:none;pointer-events:auto}
+.sticky-net strong{font-size:18px;font-weight:600;color:var(--net);font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+.sticky-net button{color:var(--accent);font-size:11px;font-weight:600;padding:6px 0}
+
+/* ── 常驻参数台 ── */
+.controls{padding:18px 18px 20px}
+.controls-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.controls-head strong{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:600}
+.controls-head svg{width:17px;height:17px;color:var(--accent)}
+.controls-head .tools{display:flex;gap:6px}
+.icon-btn{width:32px;height:32px;border-radius:11px;background:var(--input);color:var(--sub);display:flex;align-items:center;justify-content:center}
+.icon-btn svg{width:15px;height:15px}
+.icon-btn:hover{color:var(--accent);background:var(--tint)}
+.control-note{font-size:10.5px;color:var(--sub);margin-bottom:16px}
+.field{display:block;font-size:11.5px;color:var(--sub)}
+.field>span{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:7px}
+.field>span b{color:var(--ink);font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.field input,.field select{display:block;width:100%;min-width:0;color:var(--ink);background:var(--input);border:1px solid transparent;border-radius:13px;padding:11px 12px;font-size:16px;font-variant-numeric:tabular-nums;min-height:44px}
+.field input:focus,.field select:focus{border-color:var(--accent);background:var(--surface)}
+.field select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 17px) 20px,calc(100% - 12px) 20px;background-size:5px 5px;background-repeat:no-repeat;font-size:14px;padding-right:32px}
+.field-hint{font-size:10px;color:var(--sub);margin-top:6px;line-height:1.5}
+.field-hint b{color:var(--accent);font-weight:600}
+.stack{display:flex;flex-direction:column;gap:15px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.slider{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;padding:0;margin:0;min-height:26px}
+.slider::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:var(--line)}
+.slider::-moz-range-track{height:6px;border-radius:6px;background:var(--line)}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-8px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);box-shadow:0 1px 5px #12332c40}
+.slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid var(--surface)}
+.slider:focus-visible{outline:none}
+.slider:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px var(--tint)}
+.seg{display:flex;padding:4px;gap:4px;border-radius:14px;background:var(--input)}
+.seg button{flex:1;min-height:38px;font-size:11.5px;border-radius:11px;color:var(--sub);padding:4px 2px}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--accent);font-weight:600;box-shadow:0 1px 4px #12332c14}
+.divider{height:1px;background:var(--line);margin:3px 0}
+.sub-title{font-size:11px;color:var(--sub);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sub-title b{color:var(--net);font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:12px;background:var(--input);border:1px solid transparent;font-size:11.5px;color:var(--sub);min-height:36px}
+.chip[aria-pressed=true]{background:var(--tint);border-color:var(--accent);color:var(--accent);font-weight:600}
+.chip small{font-size:10px;opacity:.8;font-variant-numeric:tabular-nums}
+.stepper{display:flex;align-items:center;gap:2px;background:var(--input);border-radius:12px;padding:3px}
+.stepper button{width:32px;height:32px;border-radius:9px;font-size:16px;color:var(--accent);line-height:1}
+.stepper button:disabled{color:var(--sub);opacity:.4;cursor:default}
+.stepper span{min-width:26px;text-align:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.ded-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+.ded-row>span{color:var(--sub);flex:1}
+.ded-row>span b{display:block;color:var(--ink);font-size:12.5px;font-weight:600;margin-bottom:2px}
+.ded-row>span small{font-size:10px}
+
+/* ── 图表 ── */
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.chart-head button{min-height:34px}
+.chart-sub{font-size:11px;color:var(--sub);margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:14px 0 6px;font-size:10.5px;color:var(--sub)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;border-radius:3px}
+.plot{display:block;width:100%;height:auto;stroke:none;overflow:visible;touch-action:pan-y}
+.plot text{fill:var(--sub);font-size:9px;stroke:none;font-variant-numeric:tabular-nums}
+.plot .bar-net{fill:var(--net)}
+.plot .bar-tax{fill:var(--tax)}
+.plot .bar-fund{fill:var(--fund)}
+.plot .bar-si{fill:var(--si)}
+.plot .bar-after{fill:var(--other)}
+.plot .sel{fill:var(--accent);opacity:.09}
+.plot .jump-line{stroke:var(--tax);stroke-width:1;stroke-dasharray:3 3}
+.plot .jump-text{fill:var(--tax);font-size:8.5px;font-weight:600}
+.plot .hit{fill:transparent;cursor:pointer}
+.chart-read{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--sub)}
+.chart-read strong{font-size:15px;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.chart-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:10.5px;color:var(--sub)}
+.chart-foot button{color:var(--accent);font-weight:600;padding:8px 0}
+
+.invite{display:flex;gap:12px;text-align:left;background:var(--tint);border-radius:20px;padding:17px}
+.invite-icon{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.invite-icon svg{width:16px;height:16px}
+.invite>span:last-child{display:flex;flex-direction:column;gap:6px}
+.invite strong{font-size:12.5px;font-weight:600}
+.invite small{font-size:10.5px;color:var(--sub);line-height:1.6}
+.invite b{font-size:11px;color:var(--accent);font-weight:600}
+.app-scroll footer{font-size:10px;line-height:1.7;color:var(--sub);padding:0 3px}
+
+/* ── 工资条页 ── */
+.month-strip{position:relative;display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:thin;scrollbar-color:var(--accent) transparent}
+.month-strip::-webkit-scrollbar{height:4px}
+.month-strip::-webkit-scrollbar-thumb{background:#10635a55;border-radius:4px}
+.month-strip::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.month-strip button{min-width:46px;min-height:52px;border-radius:14px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;color:var(--sub);flex-shrink:0}
+.month-strip button b{font-size:9px;font-weight:500;font-variant-numeric:tabular-nums}
+.month-strip button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.month-strip button[aria-pressed=true] b{opacity:.85}
+.month-strip button.has-bonus{border-color:var(--fund)}
+.receipt{background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.receipt-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:18px;border-bottom:1px dashed var(--line2)}
+.receipt-head h2{font-size:15px}
+.receipt-head p{font-size:10.5px;color:var(--sub);margin-top:5px}
+.receipt-section{padding:14px 18px}
+.receipt-section+.receipt-section{border-top:1px solid var(--line)}
+.receipt-section>h3{font-size:11px;color:var(--sub);font-weight:600;letter-spacing:.4px;margin-bottom:10px;display:flex;justify-content:space-between}
+.rline{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:12.5px;padding:6px 0}
+.rline>span{color:var(--sub);display:flex;align-items:center;gap:7px;min-width:0}
+.rline>span i{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.rline>span small{font-size:10px;opacity:.75}
+.rline>b{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rline.mute>b{color:var(--sub);font-weight:500}
+.rline.sum{border-top:1px solid var(--line);margin-top:6px;padding-top:11px;font-size:13.5px}
+.rline.sum>span{color:var(--ink);font-weight:600}
+.rline.net>b{color:var(--net);font-size:19px;letter-spacing:-.5px}
+.er-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;background:var(--input);font-size:11.5px;color:var(--sub)}
+.switch{width:44px;height:26px;border-radius:20px;background:var(--line2);position:relative;flex-shrink:0;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px #0003}
+.switch[aria-pressed=true]{background:var(--accent)}
+.switch[aria-pressed=true]::after{transform:translateX(18px)}
+.tax-steps{display:flex;flex-direction:column;gap:0}
+.tax-steps .rline>b{font-size:12.5px}
+.formula{font-size:10.5px;color:var(--sub);line-height:1.7;background:var(--input);border-radius:13px;padding:12px;margin-top:12px}
+.formula b{color:var(--accent);font-weight:600}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{min-height:46px;border-radius:15px;background:var(--tint);color:var(--accent);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn svg{width:16px;height:16px}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.ghost{background:var(--input);color:var(--sub)}
+
+/* ── 对比页 ── */
+.versus{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.versus article{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;position:relative;overflow:hidden}
+.versus article.best{border-color:var(--net);box-shadow:0 0 0 1px var(--net) inset}
+.versus h3{font-size:12.5px;display:flex;align-items:center;gap:6px}
+.versus .tag{position:absolute;top:0;right:0;background:var(--net);color:#fff;font-size:9px;font-weight:600;padding:3px 8px;border-bottom-left-radius:10px}
+.phone.dark .versus .tag{color:#0d1a18}
+.versus .big{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.7px;margin:12px 0 3px}
+.versus .cap{font-size:9.5px;color:var(--sub)}
+.versus dl{margin:12px 0 0;display:flex;flex-direction:column;gap:7px;font-size:10.5px}
+.versus dl div{display:flex;justify-content:space-between;gap:6px}
+.versus dt{color:var(--sub)}
+.versus dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
+.delta{display:flex;align-items:center;gap:10px;background:var(--net-soft);border-radius:16px;padding:14px;font-size:11.5px;color:var(--sub);line-height:1.6}
+.delta svg{width:18px;height:18px;color:var(--net)}
+.delta b{color:var(--net);font-weight:600}
+.delta.flat{background:var(--input)}
+.delta.flat svg,.delta.flat b{color:var(--sub)}
+.offer-grid{display:flex;flex-direction:column;gap:12px}
+.offer-card{border:1px solid var(--line);border-radius:18px;padding:14px;background:var(--input)}
+.offer-card.b{background:var(--tint);border-color:var(--accent)}
+.offer-card header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.offer-card header strong{font-size:12.5px;display:flex;align-items:center;gap:7px}
+.offer-card header i{width:20px;height:20px;border-radius:7px;background:var(--accent);color:var(--on-accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-style:normal}
+.offer-card.a header i{background:var(--sub)}
+.offer-card .mini{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.offer-card .mini label{font-size:10px;color:var(--sub);display:block}
+.offer-card .mini input,.offer-card .mini select{width:100%;margin-top:5px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 10px;font-size:14px;color:var(--ink);min-height:40px;font-variant-numeric:tabular-nums}
+.offer-card .result{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);font-size:10.5px;color:var(--sub)}
+.offer-card .result strong{font-size:17px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.bars{display:flex;flex-direction:column;gap:11px;margin-top:4px}
+.bar-item>div{display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px}
+.bar-item>div span{color:var(--sub)}
+.bar-item>div b{font-weight:600;font-variant-numeric:tabular-nums}
+.bar-track{height:9px;border-radius:6px;background:var(--input);overflow:hidden}
+.bar-track>i{display:block;height:100%;border-radius:6px;transition:width .4s cubic-bezier(.22,.7,.3,1)}
+
+.bottom-nav{background:var(--surface);border-top:1px solid var(--line);display:flex;gap:6px;padding:9px 16px 7px;flex-shrink:0}
+.bottom-nav button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;flex:1;min-height:58px;border-radius:16px;font-size:10.5px;color:var(--sub);padding:6px 3px}
+.bottom-nav button[aria-pressed=true]{background:var(--tint);color:var(--accent);font-weight:600}
+.bottom-nav svg{width:21px;height:21px}
+.home-indicator{height:26px;background:var(--surface);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.home-indicator span{width:120px;height:4px;background:var(--ink);border-radius:5px;opacity:.85}
+
+dialog{color:var(--ink);background:var(--bg);width:calc(100% - 26px);max-width:390px;border:1px solid var(--line);border-radius:24px;padding:0;max-height:78vh;overflow:hidden}
+dialog::backdrop{background:#0d1a1866;backdrop-filter:blur(2px)}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:17px 18px;background:var(--surface);border-bottom:1px solid var(--line)}
+.sheet-header h2{font-size:15px}
+.sheet-header button{color:var(--accent);min-height:36px;font-size:13px;font-weight:600}
+.sheet-content{padding:18px;font-size:12px;overflow:auto;max-height:calc(78vh - 62px);scrollbar-width:thin;scrollbar-color:var(--accent) transparent}
+.sheet-content::-webkit-scrollbar{width:5px}
+.sheet-content::-webkit-scrollbar-thumb{background:#10635a55;border-radius:6px}
+.sheet-content::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.sheet-content>p{color:var(--sub);line-height:1.75;margin-bottom:12px}
+.sheet-content h3{margin:16px 0 9px;font-size:12.5px}
+.sheet-content h3:first-child{margin-top:0}
+.sheet-content table{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+.sheet-content th,.sheet-content td{text-align:right;padding:9px 4px;border-bottom:1px solid var(--line)}
+.sheet-content th:first-child,.sheet-content td:first-child{text-align:left}
+.sheet-content th{color:var(--sub);font-weight:500;font-size:10px}
+.sheet-content tr.hl td{color:var(--accent);font-weight:600;background:var(--tint)}
+.sheet-content ul{margin:0;padding-left:17px;color:var(--sub);line-height:1.8}
+.sheet-content pre{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.75;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;color:var(--ink);margin:0 0 14px}
+.preset{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:9px;min-height:60px}
+.preset[aria-pressed=true]{border-color:var(--accent);background:var(--tint)}
+.preset strong{font-size:12.5px;display:block}
+.preset small{font-size:10.5px;color:var(--sub);display:block;margin-top:5px}
+.preset .num{font-size:13px;font-weight:600;color:var(--net);white-space:nowrap}
+.toast{position:absolute;left:50%;bottom:104px;transform:translate(-50%,10px);z-index:9;background:var(--ink);color:var(--bg);font-size:11.5px;padding:10px 16px;border-radius:30px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap;box-shadow:0 8px 24px #0003}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.preview-note{font-size:11px;line-height:1.75;max-width:390px;margin:14px auto 0;color:#5f6d68}
+
+/* 大字号 */
+.large-text .phone{font-size:17px}
+.large-text .page-heading h1{font-size:34px}
+.large-text .page-heading>div{flex-wrap:wrap}
+.large-text .page-heading p,.large-text .slip-sub{font-size:15px}
+.large-text .slip-value strong{font-size:38px}
+.large-text .metrics{display:flex;flex-direction:column;gap:14px}
+.large-text .metric+.metric{border-left:0;padding-left:0}
+.large-text .metric>span{font-size:14px}
+.large-text .metric strong{font-size:22px}
+.large-text .metric small{font-size:13px}
+.large-text .flow-row,.large-text .rline{font-size:15px}
+.large-text .field,.large-text .field>span,.large-text .chip,.large-text .seg button{font-size:14px}
+.large-text .field>span b{font-size:15px}
+.large-text .form-row,.large-text .versus,.large-text .actions,.large-text .offer-card .mini{grid-template-columns:1fr}
+.large-text .bottom-nav{flex-direction:column;padding-top:8px}
+.large-text .bottom-nav button{flex-direction:row;gap:12px;font-size:16px;min-height:44px}
+.large-text .share-labels,.large-text .legend,.large-text .chart-sub,.large-text .pill,.large-text .badge{font-size:13px}
+.large-text .ded-row{flex-wrap:wrap}
+.large-text .rline.net>b{font-size:22px}
+
+@media(max-width:430px){
+  body{padding:12px 8px}
+  .phone{border-radius:26px;height:min(844px,calc(100dvh - 98px))}
+  .preview-tools{font-size:10px}.preview-tools button{padding:6px 8px}
+  .slip-value strong{font-size:clamp(30px,10.5vw,46px)}
+  .preview-note{padding:0 8px}
+}
+@media(prefers-reduced-motion:no-preference){
+  button,.chip,.switch{transition:background .16s,color .16s,border-color .16s}
+  button:active{opacity:.72}
+  .enter{animation:rise .42s cubic-bezier(.22,.7,.3,1) both}
+  .enter:nth-child(2){animation-delay:.05s}.enter:nth-child(3){animation-delay:.1s}
+  .enter:nth-child(4){animation-delay:.15s}.enter:nth-child(5){animation-delay:.2s}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+}</style>
+</head>
+<body>
+<svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></symbol>
+<symbol id="slip" viewBox="0 0 24 24"><path d="M5 3h14v18l-2.3-1.6L14.4 21l-2.4-1.6L9.6 21l-2.3-1.6L5 21Z"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></symbol>
+<symbol id="calc" viewBox="0 0 24 24"><rect x="4.5" y="2.5" width="15" height="19" rx="3.2"/><path d="M8 7h8M8 11.5h1.5m4 0H15m-7 4h1.5m4 0H15m-7 3.5h1.5m4 0H15"/></symbol>
+<symbol id="compare" viewBox="0 0 24 24"><path d="M3 7h17m-4-4 4 4-4 4M21 17H4m4-4-4 4 4 4"/></symbol>
+<symbol id="sliders" viewBox="0 0 24 24"><path d="M3 6h4m4 0h10M3 12h10m4 0h4M3 18h4m4 0h10M7 3v6m10 0v6M7 15v6"/></symbol>
+<symbol id="folder" viewBox="0 0 24 24"><path d="M3 7.5V5.2A1.2 1.2 0 0 1 4.2 4h5l2 3h8.6A1.2 1.2 0 0 1 21 8.2V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/></symbol>
+<symbol id="doc" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6ZM14 3v5h5M9.5 12.5h6m-6 4h6"/></symbol>
+<symbol id="reset" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 4v5h5"/></symbol>
+<symbol id="dice" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01" stroke-width="2.6"/></symbol>
+<symbol id="export" viewBox="0 0 24 24"><path d="M12 15V3m-4 4 4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
+<symbol id="copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2.6"/><path d="M15.5 5.5v-1a1 1 0 0 0-1-1h-10a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1"/></symbol>
+<symbol id="bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5.9 1.1 1 1.7l.1.5h5l.1-.5c.1-.6.4-1.2 1-1.7A6 6 0 0 0 12 3Z"/></symbol>
+<symbol id="warn" viewBox="0 0 24 24"><path d="M12 4.5 21 20H3ZM12 10v4.5M12 17.4h.01" stroke-width="1.8"/></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M12 20V5m-6 6 6-6 6 6"/></symbol>
+<symbol id="trend" viewBox="0 0 24 24"><path d="M3 17.5 9.5 11l4 4L21 7.5M21 7.5h-5m5 0v5"/></symbol>
+<symbol id="calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M3.5 10h17M8 3v4m8-4v4"/></symbol>
+</defs></svg>
+
+<div class="preview-tools">
+  <span>iOS 界面预览 · 示例数据</span>
+  <div>
+    <button type="button" id="theme-toggle" aria-pressed="false">深色</button>
+    <button type="button" id="text-toggle" aria-pressed="false">大字号</button>
+  </div>
+</div>
+
+<div class="phone" id="phone">
+  <div class="status-bar" aria-hidden="true"><strong>9:41</strong><span>▴ ▰ ▰</span></div>
+  <header class="app-toolbar">
+    <span class="toolbar-icon" aria-hidden="true"><svg><use href="#grid"/></svg></span>
+    <span>到手工资</span>
+    <button type="button" class="toolbar-action" id="plans-button"><svg><use href="#folder"/></svg>方案</button>
+  </header>
+
+  <div class="sticky-net" id="sticky-net">
+    <span><span id="sticky-label">1 月到手</span> <strong id="sticky-value">—</strong></span>
+    <button type="button" id="sticky-top">回到顶部 ↑</button>
+  </div>
+
+  <main class="app-scroll" id="app-scroll">
+
+    <!-- ══ 场景一：到手试算 ══ -->
+    <section class="scene" id="scene-calc">
+      <div class="page-heading enter">
+        <div><h1>到手试算</h1><span class="badge"><svg><use href="#doc"/></svg>示例数据</span></div>
+        <p>税前到到手，中间到底少了什么。</p>
+      </div>
+
+      <p class="notice" id="calc-notice" hidden><svg><use href="#warn"/></svg><span id="calc-notice-text"></span></p>
+
+      <section class="slip enter" aria-label="到手工资测算结果" aria-live="polite">
+        <div class="slip-head">
+          <div class="slip-caption">
+            <button type="button" class="slip-month" id="slip-month-button"><svg><use href="#calendar"/></svg><span id="slip-month">1 月到手</span></button>
+            <span class="pill" id="slip-badge">累计预扣</span>
+          </div>
+          <div class="slip-value rnd"><span>¥</span><strong id="net-value">0.00</strong></div>
+          <div class="slip-sub" id="slip-sub"></div>
+        </div>
+        <div class="tear" aria-hidden="true"><i></i><i></i></div>
+        <div class="slip-body">
+          <div class="flow" id="flow"></div>
+          <div class="share" id="share" role="img" aria-label="税前工资去向占比"></div>
+          <div class="share-labels" id="share-labels"></div>
+          <div class="metrics" id="metrics"></div>
+          <button class="insight" type="button" id="insight-button">
+            <svg><use href="#bulb"/></svg>
+            <span><span id="insight-text"></span><b id="insight-action">看年终奖两种算法</b></span>
+            <span aria-hidden="true">›</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="panel controls enter" aria-label="测算参数">
+        <div class="controls-head">
+          <strong><svg><use href="#sliders"/></svg>测算参数</strong>
+          <span class="tools">
+            <button type="button" class="icon-btn" id="random-button" title="换一组示例" aria-label="换一组示例"><svg><use href="#dice"/></svg></button>
+            <button type="button" class="icon-btn" id="reset-button" title="恢复默认" aria-label="恢复默认"><svg><use href="#reset"/></svg></button>
+            <button type="button" class="icon-btn" id="export-button" title="导出工资条" aria-label="导出工资条"><svg><use href="#export"/></svg></button>
+          </span>
+        </div>
+        <p class="control-note">改一个数，上面立刻重算 · 全部为示例参数</p>
+
+        <div class="stack">
+          <div class="form-row">
+            <label class="field"><span>参保城市</span>
+              <select data-field="city" id="city-select"></select>
+            </label>
+            <label class="field"><span>税前月薪 <b id="gross-read">—</b></span>
+              <input data-field="gross" type="number" inputmode="decimal" min="0" step="500" value="32000">
+            </label>
+          </div>
+          <input class="slider" type="range" data-field="gross" id="gross-slider" min="3000" max="120000" step="500" value="32000" aria-label="税前月薪滑块">
+          <div class="form-row" id="custom-city-row" hidden>
+            <label class="field"><span>社保基数下限</span><input data-field="cityFloor" type="number" min="0" step="1" value="0"></label>
+            <label class="field"><span>社保基数上限</span><input data-field="cityCeil" type="number" min="0" step="1" value="999999"></label>
+          </div>
+
+          <div class="divider"></div>
+          <div>
+            <div class="sub-title"><span>社保缴费基数</span><b id="si-base-read">—</b></div>
+            <div class="seg" role="group" aria-label="社保基数口径" style="margin-top:9px">
+              <button type="button" data-base="auto" aria-pressed="true">按月薪</button>
+              <button type="button" data-base="floor" aria-pressed="false">按下限</button>
+              <button type="button" data-base="custom" aria-pressed="false">自己填</button>
+            </div>
+            <label class="field" id="custom-base-field" hidden style="margin-top:11px"><span>自定义社保基数（元）</span><input data-field="customBase" type="number" min="0" step="100" value=""></label>
+            <p class="field-hint" id="si-hint"></p>
+          </div>
+          <label class="field"><span>公积金比例 <b id="fund-read">—</b></span>
+            <input class="slider" type="range" data-field="fundRate" id="fund-slider" min="0" max="12" step="0.5" value="7">
+          </label>
+          <div>
+            <div class="sub-title"><span>公积金基数</span><b id="fund-base-read">—</b></div>
+            <div class="seg" role="group" aria-label="公积金基数口径" style="margin-top:9px">
+              <button type="button" data-fundbase="auto" aria-pressed="true">按月薪</button>
+              <button type="button" data-fundbase="floor" aria-pressed="false">按下限</button>
+              <button type="button" data-fundbase="custom" aria-pressed="false">自己填</button>
+            </div>
+            <label class="field" id="custom-fund-field" hidden style="margin-top:11px"><span>自定义公积金基数（元）</span><input data-field="customFundBase" type="number" min="0" step="100" value=""></label>
+          </div>
+
+          <div class="divider"></div>
+          <div class="sub-title"><span>专项附加扣除</span><b id="special-read">—</b></div>
+          <div class="ded-row">
+            <span><b>子女教育</b><small>每孩 2,000 元/月</small></span>
+            <span class="stepper"><button type="button" data-step="children" data-delta="-1" aria-label="减少子女数">−</button><span id="children-count">1</span><button type="button" data-step="children" data-delta="1" aria-label="增加子女数">+</button></span>
+          </div>
+          <div class="ded-row">
+            <span><b>3 岁以下婴幼儿照护</b><small>每孩 2,000 元/月</small></span>
+            <span class="stepper"><button type="button" data-step="infants" data-delta="-1" aria-label="减少婴幼儿数">−</button><span id="infants-count">0</span><button type="button" data-step="infants" data-delta="1" aria-label="增加婴幼儿数">+</button></span>
+          </div>
+          <div>
+            <div class="sub-title" style="margin-bottom:8px"><span>赡养老人</span></div>
+            <div class="seg" role="group" aria-label="赡养老人扣除">
+              <button type="button" data-elder="only" aria-pressed="true">独生 3,000</button>
+              <button type="button" data-elder="share" aria-pressed="false">分摊 1,500</button>
+              <button type="button" data-elder="none" aria-pressed="false">无</button>
+            </div>
+          </div>
+          <div>
+            <div class="sub-title" style="margin-bottom:8px"><span>住房（二选一）</span></div>
+            <div class="seg" role="group" aria-label="住房扣除">
+              <button type="button" data-housing="loan" aria-pressed="false">房贷 1,000</button>
+              <button type="button" data-housing="rent" aria-pressed="true">房租</button>
+              <button type="button" data-housing="none" aria-pressed="false">无</button>
+            </div>
+            <label class="field" id="rent-field" style="margin-top:11px"><span>房租城市档位</span>
+              <select data-field="rentTier">
+                <option value="0">直辖市 / 省会 / 计划单列市 1,500</option>
+                <option value="1">户籍人口超 100 万 1,100</option>
+                <option value="2">户籍人口不超 100 万 800</option>
+              </select>
+            </label>
+          </div>
+          <div class="chips">
+            <button type="button" class="chip" data-toggle="study" aria-pressed="false">继续教育 <small>400/月</small></button>
+            <button type="button" class="chip" id="standard-button" aria-pressed="false">扣除标准 <small>›</small></button>
+          </div>
+          <label class="field"><span>个人养老金（元/月，上限 1,000）</span><input data-field="pension" type="number" min="0" max="1000" step="100" value="0"></label>
+
+          <div class="divider"></div>
+          <div class="form-row">
+            <label class="field"><span>年终奖（元）</span><input data-field="bonus" type="number" min="0" step="1000" value="60000"></label>
+            <label class="field"><span>发放月份</span><select data-field="bonusMonth" id="bonus-month-select"></select></label>
+          </div>
+          <div>
+            <div class="sub-title" style="margin-bottom:8px"><span>年终奖计税方式</span><b id="bonus-mode-read">—</b></div>
+            <div class="seg" role="group" aria-label="年终奖计税方式">
+              <button type="button" data-bonusmode="auto" aria-pressed="true">自动择优</button>
+              <button type="button" data-bonusmode="separate" aria-pressed="false">单独计税</button>
+              <button type="button" data-bonusmode="merged" aria-pressed="false">并入综合</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="form-row">
+            <label class="field"><span>其他税前扣除</span><input data-field="otherPre" type="number" min="0" step="50" value="0"></label>
+            <label class="field"><span>税后扣款</span><input data-field="afterTax" type="number" min="0" step="50" value="0"></label>
+          </div>
+          <label class="field"><span>本年入职月份（影响累计预扣起点）</span><select data-field="startMonth" id="start-month-select"></select></label>
+          <p class="field-hint">其他税前扣除如企业年金、税优健康险；税后扣款如工会费、餐费、宿舍费。</p>
+        </div>
+      </section>
+
+      <section class="panel enter" aria-label="逐月到手走势">
+        <div class="chart-head">
+          <h2>逐月到手</h2>
+          <button type="button" class="pill" id="detail-button">全年明细 ›</button>
+        </div>
+        <p class="chart-sub" id="chart-sub">累计预扣预缴：收入累计越高，税率跳档后到手越少。</p>
+        <div class="seg" role="group" aria-label="图表口径" style="margin-top:12px">
+          <button type="button" data-chart="salary" aria-pressed="true">只看月薪</button>
+          <button type="button" data-chart="all" aria-pressed="false">含年终奖</button>
+        </div>
+        <div class="legend" id="legend"></div>
+        <svg class="plot" id="plot" viewBox="0 0 320 196" role="img" aria-label="十二个月到手工资与扣除构成"></svg>
+        <div class="chart-read"><span id="chart-read-label">1 月</span><strong id="chart-read-value">—</strong></div>
+        <div class="chart-foot"><span>点柱子切换月份</span><button type="button" id="explain-button">怎么算的 ›</button></div>
+      </section>
+
+      <button class="invite enter" type="button" id="invite-button">
+        <span class="invite-icon" aria-hidden="true"><svg><use href="#trend"/></svg></span>
+        <span><strong>换个 offer，到手差多少？</strong><small id="invite-copy"></small><b>去对比 →</b></span>
+      </button>
+
+      <footer>按居民个人工资薪金累计预扣预缴法测算，未含全年一次性奖金以外的其他所得、公益捐赠与汇算清缴补退。<br>城市社保与公积金预设是示例值，实际以当地社保年度公布口径和工资条为准。<br><span id="policy-note"></span></footer>
+    </section>
+
+    <!-- ══ 场景二：工资条 ══ -->
+    <section class="scene" id="scene-slip" hidden>
+      <div class="page-heading enter">
+        <div><h1>逐月工资条</h1><span class="badge"><svg><use href="#doc"/></svg>示例数据</span></div>
+        <p>每一笔扣款都对得上，个税能看到算式。</p>
+      </div>
+      <div class="month-strip" id="month-strip" role="group" aria-label="选择月份"></div>
+      <section class="receipt enter" aria-label="当月工资条">
+        <div class="receipt-head">
+          <div><h2 id="receipt-title">1 月工资条</h2><p id="receipt-sub"></p></div>
+          <span class="pill" id="receipt-pill">在职</span>
+        </div>
+        <div class="receipt-section"><h3><span>应发项目</span></h3><div id="receipt-income"></div></div>
+        <div class="receipt-section"><h3><span>个人扣除</span></h3><div id="receipt-deduct"></div></div>
+        <div class="er-toggle">
+          <span>显示单位缴纳部分<small style="display:block;font-size:10px;opacity:.8;margin-top:3px">不影响你的到手，只影响公司成本</small></span>
+          <button type="button" class="switch" id="employer-switch" aria-pressed="false" aria-label="显示单位缴纳部分"></button>
+        </div>
+        <div class="receipt-section" id="employer-section" hidden><h3><span>单位缴纳</span><span id="receipt-er-sum"></span></h3><div id="receipt-employer"></div></div>
+        <div class="receipt-section"><div class="rline net sum"><span>实发到手</span><b class="rnd" id="receipt-net">—</b></div></div>
+      </section>
+
+      <section class="panel enter" aria-label="本月个税算式">
+        <div class="chart-head"><h2>本月个税怎么来的</h2><span class="pill tax" id="tax-rate-pill">—</span></div>
+        <div class="tax-steps" id="tax-steps" style="margin-top:14px"></div>
+        <p class="formula" id="tax-formula"></p>
+      </section>
+
+      <div class="actions enter">
+        <button type="button" class="btn" id="copy-slip-button"><svg><use href="#copy"/></svg>复制工资条</button>
+        <button type="button" class="btn primary" id="download-slip-button"><svg><use href="#export"/></svg>导出文本</button>
+      </div>
+      <footer>工资条按当前测算参数生成，不代表任何真实单位的发放结果。</footer>
+    </section>
+
+    <!-- ══ 场景三：对比 ══ -->
+    <section class="scene" id="scene-compare" hidden>
+      <div class="page-heading enter">
+        <div><h1>算清差别</h1><span class="badge"><svg><use href="#compare"/></svg>示例数据</span></div>
+        <p>年终奖怎么发、offer 怎么选、涨薪能落袋多少。</p>
+      </div>
+
+      <section class="panel enter" aria-label="年终奖计税方式对比">
+        <div class="chart-head"><h2>年终奖两种算法</h2><span class="pill" id="bonus-amount-pill">—</span></div>
+        <p class="chart-sub">同一笔年终奖，选错方式一年可能差几千元。</p>
+        <div class="versus" id="bonus-versus" style="margin-top:14px"></div>
+        <div class="delta" id="bonus-delta" style="margin-top:12px"></div>
+        <p class="field-hint" id="bonus-trap" style="margin-top:10px"></p>
+      </section>
+
+      <section class="panel enter" aria-label="两份 offer 对比">
+        <div class="chart-head"><h2>两份 offer</h2><button type="button" class="pill" id="sync-offer-button">A 同步当前 ›</button></div>
+        <p class="chart-sub">A 默认取当前测算参数，B 可以随便改。</p>
+        <div class="offer-grid" style="margin-top:14px">
+          <div class="offer-card a">
+            <header><strong><i>A</i>当前方案</strong><span class="pill" id="offer-a-city">—</span></header>
+            <div class="mini">
+              <label>税前月薪<input data-offer="a" data-key="gross" type="number" min="0" step="500"></label>
+              <label>年终奖<input data-offer="a" data-key="bonus" type="number" min="0" step="1000"></label>
+              <label>公积金 %<input data-offer="a" data-key="fundRate" type="number" min="0" max="12" step="0.5"></label>
+              <label>城市<select data-offer="a" data-key="city"></select></label>
+            </div>
+            <div class="result"><span>全年到手</span><strong id="offer-a-net">—</strong></div>
+          </div>
+          <div class="offer-card b">
+            <header><strong><i>B</i>另一份 offer</strong><span class="pill" id="offer-b-city">—</span></header>
+            <div class="mini">
+              <label>税前月薪<input data-offer="b" data-key="gross" type="number" min="0" step="500"></label>
+              <label>年终奖<input data-offer="b" data-key="bonus" type="number" min="0" step="1000"></label>
+              <label>公积金 %<input data-offer="b" data-key="fundRate" type="number" min="0" max="12" step="0.5"></label>
+              <label>城市<select data-offer="b" data-key="city"></select></label>
+            </div>
+            <div class="result"><span>全年到手</span><strong id="offer-b-net">—</strong></div>
+          </div>
+        </div>
+        <div class="delta" id="offer-delta" style="margin-top:12px"></div>
+        <div class="bars" id="offer-bars" style="margin-top:14px"></div>
+      </section>
+
+      <section class="panel enter" aria-label="涨薪边际测算">
+        <div class="chart-head"><h2>涨薪能落袋多少</h2><span class="pill" id="marginal-pill">—</span></div>
+        <p class="chart-sub">月薪加一笔，社保、公积金和个税会跟着吃掉一部分。</p>
+        <label class="field" style="margin-top:14px"><span>月薪增加 <b id="raise-read">—</b></span>
+          <input class="slider" type="range" id="raise-slider" min="500" max="10000" step="500" value="1000">
+        </label>
+        <div class="metrics" id="marginal-metrics" style="margin-top:16px"></div>
+      </section>
+
+      <section class="panel enter" aria-label="全年汇总">
+        <div class="chart-head"><h2>全年这笔钱去哪了</h2><span class="pill" id="year-total-pill">—</span></div>
+        <div class="bars" id="year-bars" style="margin-top:16px"></div>
+        <p class="field-hint" id="year-note" style="margin-top:14px"></p>
+      </section>
+      <footer>对比结果基于同一套示例参数与现行税率表，不含股权激励、劳务报酬与地方性补贴差异。</footer>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="到手工资功能导航">
+    <button type="button" data-scene="calc" aria-pressed="true"><svg><use href="#calc"/></svg><span>到手试算</span></button>
+    <button type="button" data-scene="slip" aria-pressed="false"><svg><use href="#slip"/></svg><span>工资条</span></button>
+    <button type="button" data-scene="compare" aria-pressed="false"><svg><use href="#compare"/></svg><span>对比</span></button>
+  </nav>
+  <div class="home-indicator" aria-hidden="true"><span></span></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="sheet" aria-labelledby="sheet-title">
+    <div class="sheet-header"><h2 id="sheet-title"></h2><button type="button" id="close-sheet">完成</button></div>
+    <div class="sheet-content" id="sheet-content"></div>
+  </dialog>
+</div>
+
+<p class="preview-note">原生界面设计预览，非 iOS 模拟器截图。城市社保 / 公积金预设与工资数据均为示例，不读取账户、本机草稿或云端方案；确认后再接入 ClipStudio 的 SwiftUI 模块。</p>
+<script>'use strict';
+/* 到手工资计算。纯函数、不碰页面，预览页与 check.cjs 共用。
+ *
+ * 口径：
+ * - 个税按居民工资薪金「累计预扣预缴法」逐月算：本月预扣 = 累计应纳税额 − 已预扣合计，不为负。
+ *   所以同样月薪，年初到手多、跳档后到手少，这是真实工资条的样子，不是简化成每月一样。
+ * - 三险一金个人部分：养老 8%、医疗 2%（部分城市另加大病固定额）、失业 0.5%；工伤 / 生育个人不缴。
+ *   基数按当地上下限截断；公积金基数与比例单独设置。
+ * - 年终奖单独计税：奖金 ÷ 12 找「按月换算表」的税率与速算扣除数，税额 = 奖金 × 税率 − 速算扣除数。
+ *   政策执行至 2027-12-31（财政部 税务总局公告 2023 年第 30 号）。也可选择并入综合所得。
+ * - 「自动择优」= 两种口径各算一遍全年税额，取少的那个，并给出差额。
+ * - 城市预设是示例值，正式接入前须按当地社保年度公布数据核对；页面上全部可改。
+ */
+(function (root) {
+  const r2 = x => Math.round((x + (x >= 0 ? 1e-9 : -1e-9)) * 100) / 100;
+  const clamp = (x, lo, hi) => Math.min(Math.max(x, lo), hi);
+
+  const YEAR_TABLE = [
+    [36000, 0.03, 0], [144000, 0.10, 2520], [300000, 0.20, 16920],
+    [420000, 0.25, 31920], [660000, 0.30, 52920], [960000, 0.35, 85920], [Infinity, 0.45, 181920]
+  ];
+  const MONTH_TABLE = [
+    [3000, 0.03, 0], [12000, 0.10, 210], [25000, 0.20, 1410],
+    [35000, 0.25, 2660], [55000, 0.30, 4410], [80000, 0.35, 7160], [Infinity, 0.45, 15160]
+  ];
+  const rowOf = (table, x) => table.find(b => x <= b[0]) || table[table.length - 1];
+  const annualTax = x => x <= 0 ? 0 : r2(x * rowOf(YEAR_TABLE, x)[1] - rowOf(YEAR_TABLE, x)[2]);
+  const bonusTax = b => b <= 0 ? 0 : r2(b * rowOf(MONTH_TABLE, b / 12)[1] - rowOf(MONTH_TABLE, b / 12)[2]);
+
+  /* 示例预设（2025 社保年度量级）。er* 为单位缴纳部分，只用于「雇主成本」展示。 */
+  const CITIES = [
+    { key: 'beijing', name: '北京', floor: 6821, ceil: 35283, fundFloor: 2420, fundCeil: 36549, fund: 12, medical: 2, medicalFix: 3, erMedical: 9.8, injury: 0.4 },
+    { key: 'shanghai', name: '上海', floor: 7384, ceil: 36921, fundFloor: 2690, fundCeil: 36921, fund: 7, medical: 2, medicalFix: 0, erMedical: 9.5, injury: 0.16 },
+    { key: 'shenzhen', name: '深圳', floor: 4500, ceil: 27234, fundFloor: 2360, fundCeil: 41400, fund: 5, medical: 2, medicalFix: 0, erMedical: 5.2, injury: 0.14 },
+    { key: 'guangzhou', name: '广州', floor: 4546, ceil: 27234, fundFloor: 2300, fundCeil: 39876, fund: 12, medical: 2, medicalFix: 0, erMedical: 6.85, injury: 0.2 },
+    { key: 'hangzhou', name: '杭州', floor: 4812, ceil: 24930, fundFloor: 2490, fundCeil: 39987, fund: 12, medical: 2, medicalFix: 0, erMedical: 9.5, injury: 0.2 },
+    { key: 'chengdu', name: '成都', floor: 4511, ceil: 22554, fundFloor: 2100, fundCeil: 31362, fund: 12, medical: 2, medicalFix: 0, erMedical: 8.3, injury: 0.16 },
+    { key: 'custom', name: '自定义', floor: 0, ceil: 999999, fundFloor: 0, fundCeil: 999999, fund: 12, medical: 2, medicalFix: 0, erMedical: 9, injury: 0.3 }
+  ];
+  const PENSION = 8, UNEMPLOYMENT = 0.5, ER_PENSION = 16, ER_UNEMPLOYMENT = 0.5;
+  const STANDARD = 5000;
+  const SPECIAL = { child: 2000, infant: 2000, elderOnly: 3000, elderShare: 1500, loan: 1000, rent: [1500, 1100, 800], study: 400, pensionCap: 1000 };
+
+  const defaults = {
+    city: 'shanghai', gross: 32000, baseMode: 'auto', customBase: '', fundRate: 7, fundMode: 'auto', customFundBase: '',
+    bonus: 60000, bonusMode: 'auto', bonusMonth: 12,
+    children: 1, infants: 0, elder: 'only', housing: 'rent', rentTier: 0, study: false, pension: 0,
+    otherPre: 0, afterTax: 0, startMonth: 1
+  };
+
+  const num = (v, fallback = 0) => {
+    const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[,\s]/g, ''));
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  function specialMonthly(s) {
+    const elder = s.elder === 'only' ? SPECIAL.elderOnly : s.elder === 'share' ? SPECIAL.elderShare : 0;
+    const housing = s.housing === 'loan' ? SPECIAL.loan
+      : s.housing === 'rent' ? SPECIAL.rent[clamp(Math.round(num(s.rentTier)), 0, 2)] : 0;
+    const items = [
+      { key: 'children', name: '子女教育', value: Math.max(0, Math.round(num(s.children))) * SPECIAL.child },
+      { key: 'infants', name: '婴幼儿照护', value: Math.max(0, Math.round(num(s.infants))) * SPECIAL.infant },
+      { key: 'elder', name: '赡养老人', value: elder },
+      { key: 'housing', name: s.housing === 'loan' ? '住房贷款利息' : '住房租金', value: housing },
+      { key: 'study', name: '继续教育', value: s.study ? SPECIAL.study : 0 },
+      { key: 'pension', name: '个人养老金', value: clamp(num(s.pension), 0, SPECIAL.pensionCap) }
+    ];
+    return { items, total: r2(items.reduce((a, b) => a + b.value, 0)) };
+  }
+
+  function insurance(s, city) {
+    const gross = Math.max(0, num(s.gross));
+    const raw = s.baseMode === 'floor' ? city.floor : s.baseMode === 'custom' ? num(s.customBase, gross) : gross;
+    const base = r2(clamp(raw, city.floor, city.ceil));
+    const rawFund = s.fundMode === 'floor' ? city.fundFloor : s.fundMode === 'custom' ? num(s.customFundBase, gross) : gross;
+    const fundBase = r2(clamp(rawFund, city.fundFloor, city.fundCeil));
+    const rate = clamp(num(s.fundRate, city.fund), 0, 12);
+    const items = [
+      { key: 'pension', name: '养老保险', rate: PENSION, value: r2(base * PENSION / 100), er: r2(base * ER_PENSION / 100) },
+      { key: 'medical', name: '医疗保险', rate: city.medical, value: r2(base * city.medical / 100 + city.medicalFix), er: r2(base * city.erMedical / 100) },
+      { key: 'unemployment', name: '失业保险', rate: UNEMPLOYMENT, value: r2(base * UNEMPLOYMENT / 100), er: r2(base * ER_UNEMPLOYMENT / 100) },
+      { key: 'injury', name: '工伤保险', rate: 0, value: 0, er: r2(base * city.injury / 100) },
+      { key: 'fund', name: '住房公积金', rate, value: r2(fundBase * rate / 100), er: r2(fundBase * rate / 100) }
+    ];
+    const social = r2(items[0].value + items[1].value + items[2].value);
+    const fund = items[4].value;
+    return {
+      base, fundBase, rate, items, social, fund, total: r2(social + fund),
+      capped: raw > city.ceil + 0.005, floored: raw < city.floor - 0.005,
+      employer: r2(items.reduce((a, b) => a + b.er, 0))
+    };
+  }
+
+  /* 一次全年逐月推演。mode: 'separate' | 'merged' */
+  function run(s, city, ins, special, mode) {
+    const gross = Math.max(0, num(s.gross));
+    const bonus = Math.max(0, num(s.bonus));
+    const bonusMonth = clamp(Math.round(num(s.bonusMonth, 12)), 1, 12);
+    const start = clamp(Math.round(num(s.startMonth, 1)), 1, 12);
+    const otherPre = Math.max(0, num(s.otherPre));
+    const afterTax = Math.max(0, num(s.afterTax));
+    const separateBonus = mode === 'separate' ? bonusTax(bonus) : 0;
+    const rows = [];
+    let cumIncome = 0, cumDeduct = 0, cumPaid = 0, prevRate = 0;
+    for (let m = 1; m <= 12; m++) {
+      const active = m >= start && gross > 0;
+      const pay = active ? gross : 0;
+      const monthBonus = m === bonusMonth ? bonus : 0;
+      const social = active ? ins.social : 0;
+      const fund = active ? ins.fund : 0;
+      const extra = active ? special.total : 0;
+      const pre = active ? otherPre : 0;
+      const income = pay + (mode === 'merged' ? monthBonus : 0);
+      cumIncome += income;
+      cumDeduct += (active ? STANDARD : 0) + social + fund + extra + pre;
+      const taxable = Math.max(0, r2(cumIncome - cumDeduct));
+      const row = rowOf(YEAR_TABLE, taxable);
+      const cumTax = annualTax(taxable);
+      const tax = active ? r2(Math.max(0, cumTax - cumPaid)) : 0;
+      cumPaid = r2(cumPaid + tax);
+      const bTax = m === bonusMonth ? separateBonus : 0;
+      const net = r2(pay + monthBonus - social - fund - tax - bTax - (active ? afterTax : 0));
+      rows.push({
+        month: m, active, gross: pay, bonus: monthBonus,
+        social, fund, insurance: r2(social + fund), special: extra, otherPre: pre, afterTax: active ? afterTax : 0,
+        cumIncome: r2(cumIncome), cumDeduct: r2(cumDeduct), cumTaxable: taxable,
+        rate: row[1], quick: row[2], cumTax, tax, bonusTax: bTax,
+        taxTotal: r2(tax + bTax), net, cumNet: 0,
+        jump: active && row[1] > prevRate && m > start ? { from: prevRate, to: row[1] } : null
+      });
+      if (active) prevRate = row[1];
+    }
+    let running = 0;
+    rows.forEach(r => { running = r2(running + r.net); r.cumNet = running; });
+    const sum = key => r2(rows.reduce((a, b) => a + b[key], 0));
+    const months = rows.filter(r => r.active).length;
+    return {
+      mode, rows, months,
+      gross: sum('gross'), bonus: sum('bonus'), social: sum('social'), fund: sum('fund'),
+      tax: sum('tax'), bonusTax: sum('bonusTax'), taxTotal: sum('taxTotal'),
+      afterTax: sum('afterTax'), net: sum('net'),
+      avgNet: months ? r2(sum('net') / months) : 0,
+      salaryNet: r2(sum('net') - (bonus - separateBonus)),
+      bonusNet: r2(bonus - separateBonus),
+      jumps: rows.filter(r => r.jump)
+    };
+  }
+
+  function compute(raw) {
+    const s = Object.assign({}, defaults, raw || {});
+    const city = CITIES.find(c => c.key === s.city) || CITIES[0];
+    const ins = insurance(s, city);
+    const special = specialMonthly(s);
+    const separate = run(s, city, ins, special, 'separate');
+    const merged = run(s, city, ins, special, 'merged');
+    const requested = s.bonusMode === 'auto' ? (separate.taxTotal <= merged.taxTotal ? 'separate' : 'merged') : s.bonusMode;
+    const main = requested === 'merged' ? merged : separate;
+    const bonus = Math.max(0, num(s.bonus));
+    const employer = r2(ins.employer * main.months);
+    return {
+      input: s, city, insurance: ins, special, main, separate, merged,
+      bonusMode: requested, auto: s.bonusMode === 'auto',
+      bonusCompare: {
+        separate: { tax: separate.taxTotal, net: separate.net, bonusTax: separate.bonusTax },
+        merged: { tax: merged.taxTotal, net: merged.net, bonusTax: merged.bonusTax },
+        best: separate.taxTotal <= merged.taxTotal ? 'separate' : 'merged',
+        saving: r2(Math.abs(separate.taxTotal - merged.taxTotal)),
+        hasBonus: bonus > 0
+      },
+      cost: { employer, total: r2(main.gross + main.bonus + employer) },
+      effectiveRate: main.gross + main.bonus > 0 ? main.taxTotal / (main.gross + main.bonus) : 0,
+      netRate: main.gross + main.bonus > 0 ? main.net / (main.gross + main.bonus) : 0,
+      raise: marginal(s, 1000)
+    };
+  }
+
+  function marginal(raw, delta = 1000) {
+    const s = Object.assign({}, defaults, raw || {});
+    const a = computeQuiet(s), b = computeQuiet(Object.assign({}, s, { gross: Math.max(0, num(s.gross)) + delta }));
+    const gain = r2(b.main.net - a.main.net);
+    return { delta, yearGain: gain, monthGain: r2(gain / 12), keepRate: delta > 0 ? gain / (delta * 12) : 0 };
+  }
+  function computeQuiet(s) {
+    const city = CITIES.find(c => c.key === s.city) || CITIES[0];
+    const ins = insurance(s, city), special = specialMonthly(s);
+    const separate = run(s, city, ins, special, 'separate'), merged = run(s, city, ins, special, 'merged');
+    const mode = s.bonusMode === 'auto' ? (separate.taxTotal <= merged.taxTotal ? 'separate' : 'merged') : s.bonusMode;
+    return { main: mode === 'merged' ? merged : separate };
+  }
+
+  root.SalaryCalc = {
+    compute, marginal, insurance, specialMonthly, annualTax, bonusTax,
+    CITIES, SPECIAL, YEAR_TABLE, MONTH_TABLE, STANDARD, defaults, r2
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);</script><script>(() => {
+  'use strict';
+  const C = globalThis.SalaryCalc;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const money = n => Number(n || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const whole = n => Math.round(Number(n || 0)).toLocaleString('zh-CN');
+  const num = n => Number(n || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+  const wan = n => num(Number(n || 0) / 10000);
+  const pct = n => (Number(n || 0) * 100).toFixed(1) + '%';
+  const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
+  const nOf = v => { const n = parseFloat(String(v ?? '').replace(/[,\s]/g, '')); return Number.isFinite(n) ? n : 0; };
+
+  const state = Object.assign({}, C.defaults);
+  let scene = 'calc', month = 1, chartMode = 'salary', showEmployer = false, raiseDelta = 1000;
+  let offerA = null, offerB = null, result = null, syncing = false;
+
+  const PRESETS = [
+    { name: '上海 · 一娃租房', desc: '月薪 32,000 · 年终奖 6 万 · 公积金 7%', data: Object.assign({}, C.defaults) },
+    { name: '北京 · 双娃房贷', desc: '月薪 45,000 · 年终奖 12 万 · 公积金 12%', data: Object.assign({}, C.defaults, { city: 'beijing', gross: 45000, fundRate: 12, bonus: 120000, children: 2, infants: 0, elder: 'share', housing: 'loan', pension: 1000 }) },
+    { name: '深圳 · 应届入职', desc: '月薪 18,000 · 7 月入职 · 仅租房扣除', data: Object.assign({}, C.defaults, { city: 'shenzhen', gross: 18000, fundRate: 5, bonus: 20000, children: 0, elder: 'none', housing: 'rent', rentTier: 0, startMonth: 7 }) },
+    { name: '杭州 · 扣除用满', desc: '月薪 25,000 · 个人养老金 1,000', data: Object.assign({}, C.defaults, { city: 'hangzhou', gross: 25000, fundRate: 12, bonus: 40000, children: 1, infants: 1, elder: 'only', housing: 'loan', study: true, pension: 1000 }) },
+    { name: '成都 · 低收入并入更划算', desc: '月薪 8,000 · 年终奖 2 万', data: Object.assign({}, C.defaults, { city: 'chengdu', gross: 8000, fundRate: 12, bonus: 20000, children: 1, elder: 'only', housing: 'rent', rentTier: 1 }) }
+  ];
+  let presets = PRESETS.slice();
+  let activePreset = 0;
+
+  const HUES = [
+    { key: 'net', name: '到手', css: 'var(--net)' },
+    { key: 'fund', name: '公积金', css: 'var(--fund)' },
+    { key: 'social', name: '社保', css: 'var(--si)' },
+    { key: 'tax', name: '个税', css: 'var(--tax)' },
+    { key: 'after', name: '税后扣款', css: 'var(--other)' }
+  ];
+
+  /* ── 初始化静态控件 ── */
+  const cityOptions = C.CITIES.map(c => `<option value="${c.key}">${c.name}</option>`).join('');
+  $('city-select').innerHTML = cityOptions;
+  document.querySelectorAll('select[data-offer][data-key="city"]').forEach(s => { s.innerHTML = cityOptions; });
+  const monthOptions = Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1} 月</option>`).join('');
+  $('bonus-month-select').innerHTML = monthOptions;
+  $('start-month-select').innerHTML = Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1} 月${i === 0 ? '（全年在职）' : ''}</option>`).join('');
+
+  /* ── 计算 ── */
+  function recalc() {
+    result = C.compute(state);
+    if (!offerA) offerA = pickOffer(state);
+    if (!offerB) offerB = Object.assign({}, pickOffer(state), { gross: 38000, bonus: 90000, fundRate: 12, city: 'beijing' });
+    month = clamp(month, 1, 12);
+    renderHero();
+    renderReadouts();
+    renderChart();
+    renderSlip();
+    renderCompare();
+    renderSticky();
+  }
+  const pickOffer = s => ({ city: s.city, gross: nOf(s.gross), bonus: nOf(s.bonus), fundRate: nOf(s.fundRate), baseMode: s.baseMode, customBase: s.customBase, fundMode: s.fundMode, customFundBase: s.customFundBase, children: s.children, infants: s.infants, elder: s.elder, housing: s.housing, rentTier: s.rentTier, study: s.study, pension: s.pension, otherPre: s.otherPre, afterTax: s.afterTax, startMonth: s.startMonth, bonusMode: s.bonusMode, bonusMonth: s.bonusMonth });
+
+  /* ── 主卡 ── */
+  function renderHero() {
+    const r = result.main.rows[month - 1];
+    const total = r.gross + r.bonus;
+    $('slip-month').textContent = `${month} 月到手`;
+    $('slip-badge').textContent = !r.active ? '未入职' : r.bonus > 0 ? '含年终奖' : r.jump ? `本月跳档 ${Math.round(r.rate * 100)}%` : `税率档 ${Math.round(r.rate * 100)}%`;
+    $('slip-badge').className = 'pill' + (r.jump ? ' tax' : '');
+    animateNumber($('net-value'), r.net);
+    $('slip-sub').innerHTML = `<span>${esc(result.city.name)} · 税前 <b>${whole(total)}</b></span><span>到手率 <b>${total > 0 ? pct(r.net / total) : '—'}</b></span><span>专项附加 <b>${whole(result.special.total)}</b>/月</span>`;
+
+    const rows = [
+      { name: '税前月薪', value: r.gross, sign: '', color: 'var(--sub)' },
+      r.bonus > 0 ? { name: `年终奖（${result.bonusMode === 'separate' ? '单独计税' : '并入综合所得'}）`, value: r.bonus, sign: '', color: 'var(--sub)' } : null,
+      { name: '社保个人部分', value: -r.social, sign: '−', color: 'var(--si)' },
+      { name: '公积金个人部分', value: -r.fund, sign: '−', color: 'var(--fund)', note: '进你的账户' },
+      { name: '个人所得税', value: -r.taxTotal, sign: '−', color: 'var(--tax)' },
+      r.afterTax > 0 ? { name: '税后扣款', value: -r.afterTax, sign: '−', color: 'var(--other)' } : null
+    ].filter(Boolean);
+    $('flow').innerHTML = rows.map(x => `<div class="flow-row"><i class="dot" style="background:${x.color}"></i><span class="name">${esc(x.name)}${x.note ? ` <small style="opacity:.7">· ${x.note}</small>` : ''}</span><span class="amt" style="color:${x.value < 0 ? x.color : 'var(--ink)'}">${x.value < 0 ? '−' : ''}${money(Math.abs(x.value))}</span></div>`).join('')
+      + `<div class="flow-row total"><i class="dot" style="background:var(--net)"></i><span class="name">实发到手</span><span class="amt" style="color:var(--net)">${money(r.net)}</span></div>`;
+
+    const parts = [
+      { key: 'net', v: Math.max(0, r.net) }, { key: 'fund', v: r.fund },
+      { key: 'social', v: r.social }, { key: 'tax', v: r.taxTotal }, { key: 'after', v: r.afterTax }
+    ];
+    const sum = parts.reduce((a, b) => a + b.v, 0) || 1;
+    $('share').innerHTML = parts.filter(p => p.v > 0).map(p => {
+      const h = HUES.find(x => x.key === p.key);
+      return `<span style="width:${p.v / sum * 100}%;background:${h.css}"></span>`;
+    }).join('');
+    $('share').setAttribute('aria-label', parts.map(p => `${HUES.find(x => x.key === p.key).name} ${pct(p.v / sum)}`).join('，'));
+    $('share-labels').innerHTML = parts.filter(p => p.v > 0).map(p => {
+      const h = HUES.find(x => x.key === p.key);
+      return `<span><i style="background:${h.css}"></i>${h.name} ${pct(p.v / sum)}</span>`;
+    }).join('');
+
+    $('metrics').innerHTML = [
+      ['全年到手', wan(result.main.net), '万元'],
+      ['月均到手', whole(result.main.avgNet), '元'],
+      ['全年个税', whole(result.main.taxTotal), '元']
+    ].map(([t, v, u]) => `<div class="metric"><span>${t}</span><strong>${esc(v)}</strong><small>${u}</small></div>`).join('');
+
+    const bc = result.bonusCompare;
+    if (bc.hasBonus) {
+      $('insight-text').textContent = `年终奖 ${whole(result.main.bonus)} 元，${bc.best === 'separate' ? '单独计税' : '并入综合所得'}比另一种少交 ${whole(bc.saving)} 元。`;
+      $('insight-action').textContent = '看两种算法差多少';
+    } else {
+      $('insight-text').textContent = `月薪每加 1,000 元，全年实际多到手 ${whole(result.raise.yearGain)} 元，落袋 ${pct(result.raise.keepRate)}。`;
+      $('insight-action').textContent = '看涨薪与 offer 对比';
+    }
+
+    const notice = $('calc-notice');
+    const warnings = [];
+    if (r.active && r.net < 0) warnings.push('社保按下限托底后已超过月薪，本月到手为负，实际请与 HR 确认缴纳口径。');
+    if (result.insurance.capped) warnings.push(`月薪高于${result.city.name}社保基数上限，社保按 ${whole(result.insurance.base)} 封顶计算。`);
+    if (result.insurance.floored) warnings.push(`月薪低于${result.city.name}社保基数下限，社保按 ${whole(result.insurance.base)} 托底计算。`);
+    notice.hidden = warnings.length === 0;
+    $('calc-notice-text').textContent = warnings.join(' ');
+
+    $('invite-copy').textContent = `当前方案全年到手 ${wan(result.main.net)} 万元，月均 ${whole(result.main.avgNet)} 元。`;
+    $('policy-note').textContent = '全年一次性奖金单独计税政策执行至 2027-12-31（财政部 税务总局公告 2023 年第 30 号）。';
+  }
+
+  let animFrame = 0;
+  function animateNumber(el, target) {
+    const from = parseFloat(String(el.textContent).replace(/,/g, '')) || 0;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || Math.abs(target - from) < 0.5) { el.textContent = money(target); return; }
+    cancelAnimationFrame(animFrame);
+    const t0 = performance.now(), dur = 320;
+    const step = t => {
+      const k = clamp((t - t0) / dur, 0, 1), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = money(from + (target - from) * e);
+      if (k < 1) animFrame = requestAnimationFrame(step);
+    };
+    animFrame = requestAnimationFrame(step);
+  }
+
+  /* ── 参数台读数（不重建输入框，避免打断输入） ── */
+  function renderReadouts() {
+    syncing = true;
+    document.querySelectorAll('[data-field]').forEach(el => {
+      const k = el.dataset.field;
+      if (k === 'cityFloor' || k === 'cityCeil') return;
+      if (el === document.activeElement) return;
+      const v = state[k];
+      if (el.tagName === 'SELECT') el.value = String(v);
+      else el.value = String(v ?? '');
+    });
+    const custom = C.CITIES.find(c => c.key === 'custom');
+    const floorInput = document.querySelector('[data-field="cityFloor"]');
+    const ceilInput = document.querySelector('[data-field="cityCeil"]');
+    if (floorInput !== document.activeElement) floorInput.value = String(custom.floor);
+    if (ceilInput !== document.activeElement) ceilInput.value = String(custom.ceil);
+    syncing = false;
+
+    $('gross-read').textContent = '¥' + whole(state.gross);
+    $('gross-slider').value = String(clamp(nOf(state.gross), 3000, 120000));
+    $('si-base-read').textContent = '¥' + whole(result.insurance.base);
+    $('fund-read').textContent = num(result.insurance.rate) + '% · ¥' + whole(result.insurance.fund);
+    $('fund-slider').value = String(result.insurance.rate);
+    $('fund-base-read').textContent = '¥' + whole(result.insurance.fundBase);
+    $('special-read').textContent = '¥' + whole(result.special.total) + '/月';
+    $('children-count').textContent = String(Math.max(0, Math.round(nOf(state.children))));
+    $('infants-count').textContent = String(Math.max(0, Math.round(nOf(state.infants))));
+    $('bonus-mode-read').textContent = result.auto ? '已选' + (result.bonusMode === 'separate' ? '单独' : '并入') : '';
+    $('si-hint').innerHTML = `${esc(result.city.name)}示例区间 <b>${whole(result.city.floor)} – ${whole(result.city.ceil)}</b>；个人缴养老 8% + 医疗 ${num(result.city.medical)}%${result.city.medicalFix ? ` + ${result.city.medicalFix} 元` : ''} + 失业 0.5%，工伤生育个人不缴。`;
+
+    $('custom-city-row').hidden = state.city !== 'custom';
+    $('custom-base-field').hidden = state.baseMode !== 'custom';
+    $('custom-fund-field').hidden = state.fundMode !== 'custom';
+    $('rent-field').hidden = state.housing !== 'rent';
+    document.querySelectorAll('[data-base]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.base === state.baseMode)));
+    document.querySelectorAll('[data-fundbase]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.fundbase === state.fundMode)));
+    document.querySelectorAll('[data-elder]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.elder === state.elder)));
+    document.querySelectorAll('[data-housing]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.housing === state.housing)));
+    document.querySelectorAll('[data-bonusmode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bonusmode === state.bonusMode)));
+    document.querySelector('[data-toggle="study"]').setAttribute('aria-pressed', String(!!state.study));
+    document.querySelectorAll('[data-step]').forEach(b => {
+      const k = b.dataset.step, v = Math.max(0, Math.round(nOf(state[k])));
+      b.disabled = b.dataset.delta === '-1' ? v <= 0 : v >= 6;
+    });
+  }
+
+  /* ── 逐月图表 ── */
+  function renderChart() {
+    const rows = result.main.rows;
+    const withBonus = chartMode === 'all';
+    const data = rows.map(r => ({
+      month: r.month, active: r.active, jump: r.jump,
+      net: Math.max(0, r.net - (withBonus ? 0 : r.bonus - r.bonusTax)),
+      fund: r.fund, social: r.social,
+      tax: r.taxTotal - (withBonus ? 0 : r.bonusTax),
+      after: r.afterTax
+    }));
+    const totals = data.map(d => d.net + d.fund + d.social + d.tax + d.after);
+    const peak = Math.max(1, ...totals);
+    const unit = peak >= 20000 ? 10000 : 1000;
+    const top = Math.ceil(peak / unit) * unit;
+    const L = 32, R = 314, T = 16, B = 156, H = B - T;
+    const slot = (R - L) / 12, bw = Math.min(15, slot - 7);
+    const y = v => B - (v / top) * H;
+    let s = '';
+    for (let i = 0; i <= 2; i++) {
+      const v = top * i / 2, yy = y(v);
+      s += `<line x1="${L}" y1="${yy.toFixed(1)}" x2="${R}" y2="${yy.toFixed(1)}" stroke="var(--line)" stroke-width="1"${i ? ' stroke-dasharray="2 4"' : ''}/>`;
+      s += `<text x="${L - 6}" y="${(yy + 3).toFixed(1)}" text-anchor="end">${num(v / unit)}</text>`;
+    }
+    s += `<text x="${L - 6}" y="${T - 5}" text-anchor="end">${unit === 10000 ? '万' : '千'}</text>`;
+    const order = ['net', 'fund', 'social', 'tax', 'after'];
+    data.forEach((d, i) => {
+      const x = L + i * slot + (slot - bw) / 2;
+      if (d.month === month) s += `<rect class="sel" x="${(L + i * slot).toFixed(1)}" y="${T - 6}" width="${slot.toFixed(1)}" height="${H + 12}" rx="7"/>`;
+      if (!d.active) {
+        s += `<rect x="${x.toFixed(1)}" y="${B - 5}" width="${bw.toFixed(1)}" height="5" rx="2" fill="var(--line2)"/>`;
+      } else {
+        s += `<clipPath id="barclip${i}"><rect x="${x.toFixed(1)}" y="${y(totals[i]).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(2, B - y(totals[i])).toFixed(1)}" rx="4"/></clipPath><g clip-path="url(#barclip${i})">`;
+        let acc = 0;
+        order.forEach(k => {
+          const v = d[k]; if (v <= 0) return;
+          const h = (v / top) * H;
+          s += `<rect class="bar-${k === 'social' ? 'si' : k}" x="${x.toFixed(1)}" y="${y(acc + v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.6, h).toFixed(1)}"/>`;
+          acc += v;
+        });
+        s += '</g>';
+        if (d.jump) {
+          const jy = y(totals[i]) - 4;
+          s += `<line class="jump-line" x1="${(x + bw / 2).toFixed(1)}" y1="${(jy + 2).toFixed(1)}" x2="${(x + bw / 2).toFixed(1)}" y2="${(jy + 12).toFixed(1)}"/>`;
+          s += `<text class="jump-text" x="${(x + bw / 2).toFixed(1)}" y="${Math.max(9, jy - 1).toFixed(1)}" text-anchor="middle">↑${Math.round(d.jump.to * 100)}%</text>`;
+        }
+      }
+      s += `<text x="${(L + i * slot + slot / 2).toFixed(1)}" y="${B + 15}" text-anchor="middle"${d.month === month ? ' fill="var(--accent)" font-weight="700"' : ''}>${d.month}</text>`;
+      s += `<rect class="hit" data-month="${d.month}" x="${(L + i * slot).toFixed(1)}" y="${T - 8}" width="${slot.toFixed(1)}" height="${H + 26}" tabindex="0" role="button" aria-label="查看 ${d.month} 月"/>`;
+    });
+    if (withBonus && result.main.rows.some(r => r.bonus > 0)) {
+      const bm = result.main.rows.findIndex(r => r.bonus > 0);
+      s += `<text x="${(L + bm * slot + slot / 2).toFixed(1)}" y="${B + 28}" text-anchor="middle" fill="var(--fund)" font-size="8">年终奖</text>`;
+    }
+    $('plot').innerHTML = s;
+    $('legend').innerHTML = HUES.filter(h => h.key !== 'after' || result.main.afterTax > 0)
+      .map(h => `<span><i style="background:${h.css}"></i>${h.name}</span>`).join('')
+      + '<span style="color:var(--tax)">↑ 表示当月税率跳档</span>';
+    const d = data[month - 1];
+    $('chart-read-label').textContent = `${month} 月${d.active ? '' : '（未入职）'} · 到手`;
+    $('chart-read-value').textContent = '¥' + money(d.net);
+    $('chart-sub').textContent = withBonus
+      ? `含 ${result.main.rows.findIndex(r => r.bonus > 0) + 1} 月发放的年终奖，纵轴按全年峰值缩放。`
+      : '累计预扣预缴：收入累计越高，税率跳档后到手越少。';
+    document.querySelectorAll('[data-chart]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.chart === chartMode)));
+  }
+
+  /* ── 工资条 ── */
+  function renderSlip() {
+    const r = result.main.rows[month - 1];
+    const strip = $('month-strip');
+    strip.innerHTML = result.main.rows.map(x => `<button type="button" data-month="${x.month}" aria-pressed="${x.month === month}" class="${x.bonus > 0 ? 'has-bonus' : ''}">${x.month} 月<b>${x.active ? (x.net / 1000).toFixed(1) + 'k' : '—'}</b></button>`).join('');
+    const picked = strip.querySelector('[aria-pressed="true"]');
+    if (picked) strip.scrollLeft = picked.offsetLeft - strip.clientWidth / 2 + picked.offsetWidth / 2;
+    $('receipt-title').textContent = `${month} 月工资条`;
+    $('receipt-sub').textContent = `${result.city.name} · 社保基数 ${whole(result.insurance.base)} · 公积金基数 ${whole(result.insurance.fundBase)} × ${num(result.insurance.rate)}%`;
+    $('receipt-pill').textContent = !r.active ? '未入职' : r.bonus > 0 ? '含年终奖' : '在职';
+    $('receipt-pill').className = 'pill' + (r.bonus > 0 ? ' warn' : '');
+
+    const income = [{ n: '月薪（应发）', v: r.gross }];
+    if (r.bonus > 0) income.push({ n: '全年一次性奖金', v: r.bonus });
+    $('receipt-income').innerHTML = income.map(x => line(x.n, x.v)).join('')
+      + `<div class="rline sum"><span>应发合计</span><b>${money(r.gross + r.bonus)}</b></div>`;
+
+    const ins = result.insurance.items;
+    const deduct = [
+      { n: '养老保险', s: '8%', v: r.active ? ins[0].value : 0, c: 'var(--si)' },
+      { n: '医疗保险', s: num(result.city.medical) + '%' + (result.city.medicalFix ? ` + ${result.city.medicalFix} 元` : ''), v: r.active ? ins[1].value : 0, c: 'var(--si)' },
+      { n: '失业保险', s: '0.5%', v: r.active ? ins[2].value : 0, c: 'var(--si)' },
+      { n: '住房公积金', s: num(result.insurance.rate) + '%', v: r.fund, c: 'var(--fund)' },
+      { n: '其他税前扣除', s: '年金 / 税优健康险', v: r.otherPre, c: 'var(--other)' },
+      { n: '个人所得税（工资）', s: `预扣 ${Math.round(r.rate * 100)}% 档`, v: r.tax, c: 'var(--tax)' },
+      { n: '个人所得税（年终奖）', s: result.bonusMode === 'separate' ? '单独计税' : '已并入上行', v: r.bonusTax, c: 'var(--tax)' },
+      { n: '税后扣款', s: '工会费 / 餐费等', v: r.afterTax, c: 'var(--other)' }
+    ].filter(x => x.v > 0);
+    const deductSum = r.social + r.fund + r.otherPre + r.taxTotal + r.afterTax;
+    $('receipt-deduct').innerHTML = (deduct.length ? deduct.map(x => line(x.n, -x.v, x.s, x.c)).join('') : '<div class="rline mute"><span>本月无扣款</span><b>0.00</b></div>')
+      + `<div class="rline sum"><span>扣除合计</span><b style="color:var(--tax)">−${money(deductSum)}</b></div>`;
+    $('receipt-net').textContent = '¥' + money(r.net);
+
+    $('employer-switch').setAttribute('aria-pressed', String(showEmployer));
+    $('employer-section').hidden = !showEmployer;
+    if (showEmployer) {
+      const er = [
+        { n: '养老保险', s: '16%', v: ins[0].er }, { n: '医疗保险（含生育）', s: num(result.city.erMedical) + '%', v: ins[1].er },
+        { n: '失业保险', s: '0.5%', v: ins[2].er }, { n: '工伤保险', s: num(result.city.injury) + '%', v: ins[3].er },
+        { n: '住房公积金', s: num(result.insurance.rate) + '%', v: ins[4].er }
+      ].map(x => ({ n: x.n, s: x.s, v: r.active ? x.v : 0, c: 'var(--sub)' }));
+      const erSum = r.active ? result.insurance.employer : 0;
+      $('receipt-employer').innerHTML = er.map(x => line(x.n, x.v, x.s, x.c)).join('')
+        + `<div class="rline sum"><span>单位缴纳合计</span><b>${money(erSum)}</b></div>`
+        + `<div class="rline mute"><span>公司为你付出的总成本</span><b>${money(r.gross + r.bonus + erSum)}</b></div>`;
+      $('receipt-er-sum').textContent = money(erSum);
+    }
+
+    const n = result.main.rows.slice(0, month).filter(x => x.active).length;
+    const prevPaid = C.r2(r.cumTax - r.tax);
+    const steps = [
+      ['累计收入', r.cumIncome], [`累计减除费用（5,000 × ${n} 个月）`, -5000 * n],
+      ['累计三险一金', -(cumOf('social') + cumOf('fund'))],
+      ['累计专项附加扣除', -cumOf('special')], ['累计其他税前扣除', -cumOf('otherPre')]
+    ];
+    $('tax-rate-pill').textContent = r.active ? `${Math.round(r.rate * 100)}% 档 · 速算 ${whole(r.quick)}` : '未入职';
+    $('tax-steps').innerHTML = steps.map(([k, v]) => `<div class="rline mute"><span>${esc(k)}</span><b>${v < 0 ? '−' : ''}${money(Math.abs(v))}</b></div>`).join('')
+      + `<div class="rline sum"><span>累计应纳税所得额</span><b>${money(r.cumTaxable)}</b></div>`
+      + `<div class="rline"><span>累计应纳税额</span><b>${money(r.cumTax)}</b></div>`
+      + `<div class="rline mute"><span>此前已预扣</span><b>${prevPaid > 0 ? '−' : ''}${money(prevPaid)}</b></div>`
+      + `<div class="rline sum"><span style="color:var(--tax)">本月应预扣</span><b style="color:var(--tax)">${money(r.tax)}</b></div>`;
+    $('tax-formula').innerHTML = r.active
+      ? `<b>本月预扣</b> = 累计应纳税所得额 ${money(r.cumTaxable)} × ${Math.round(r.rate * 100)}% − 速算扣除数 ${whole(r.quick)} − 已预扣 ${money(prevPaid)} = <b>${money(r.tax)}</b>${r.bonusTax > 0 ? `<br><b>年终奖单独计税</b> = ${money(r.bonus)} ÷ 12 = ${money(r.bonus / 12)} → 适用 ${Math.round(bonusRate(r.bonus) * 100)}% 档，税额 ${money(r.bonusTax)}` : ''}`
+      : '本月尚未入职，不参与累计预扣。入职当月起重新从 3% 档累计。';
+  }
+  const cumOf = key => C.r2(result.main.rows.slice(0, month).reduce((a, b) => a + b[key], 0));
+  const bonusRate = b => (C.MONTH_TABLE.find(x => b / 12 <= x[0]) || C.MONTH_TABLE[6])[1];
+  function line(name, value, sub, color) {
+    const neg = value < 0;
+    return `<div class="rline"><span>${color ? `<i style="background:${color}"></i>` : ''}${esc(name)}${sub ? ` <small>${esc(sub)}</small>` : ''}</span><b style="${neg ? `color:${color || 'var(--tax)'}` : ''}">${neg ? '−' : ''}${money(Math.abs(value))}</b></div>`;
+  }
+
+  /* ── 对比 ── */
+  function renderCompare() {
+    const bc = result.bonusCompare;
+    $('bonus-amount-pill').textContent = bc.hasBonus ? '年终奖 ¥' + whole(result.main.bonus) : '未填年终奖';
+    const card = (key, title, obj) => {
+      const best = bc.hasBonus && bc.best === key;
+      return `<article class="${best ? 'best' : ''}">${best ? '<span class="tag">更省税</span>' : ''}
+        <h3>${title}</h3><div class="big rnd" style="color:${best ? 'var(--net)' : 'var(--ink)'}">${whole(obj.tax)}</div><div class="cap">全年个税合计（元）</div>
+        <dl><div><dt>年终奖税额</dt><dd>${whole(obj.bonusTax)}</dd></div>
+        <div><dt>工资部分税额</dt><dd>${whole(obj.tax - obj.bonusTax)}</dd></div>
+        <div><dt>全年到手</dt><dd style="color:var(--net)">${whole(obj.net)}</dd></div></dl></article>`;
+    };
+    $('bonus-versus').innerHTML = card('separate', '单独计税', bc.separate) + card('merged', '并入综合所得', bc.merged);
+    const d = $('bonus-delta');
+    if (!bc.hasBonus) {
+      d.className = 'delta flat';
+      d.innerHTML = `<svg><use href="#warn"/></svg><span>还没有填年终奖。填上金额后，这里会直接告诉你哪种算法更省。</span>`;
+    } else {
+      d.className = 'delta';
+      d.innerHTML = `<svg><use href="#up"/></svg><span>选 <b>${bc.best === 'separate' ? '单独计税' : '并入综合所得'}</b>，全年少交 <b>¥${whole(bc.saving)}</b>，摊到每月多拿 <b>¥${whole(bc.saving / 12)}</b>。${result.auto ? '当前已自动择优。' : `当前手动选了${result.bonusMode === 'separate' ? '单独计税' : '并入综合所得'}。`}</span>`;
+    }
+    $('bonus-trap').innerHTML = trapText(nOf(state.bonus));
+
+    ['a', 'b'].forEach(k => {
+      const o = k === 'a' ? offerA : offerB;
+      document.querySelectorAll(`[data-offer="${k}"]`).forEach(el => {
+        if (el === document.activeElement) return;
+        el.value = String(o[el.dataset.key] ?? '');
+      });
+      const res = C.compute(o);
+      $(`offer-${k}-net`).textContent = '¥' + whole(res.main.net);
+      $(`offer-${k}-city`).textContent = res.city.name + ' · 月均 ' + whole(res.main.avgNet);
+    });
+    const ra = C.compute(offerA), rb = C.compute(offerB);
+    const diff = C.r2(rb.main.net - ra.main.net);
+    const grossDiff = C.r2((rb.main.gross + rb.main.bonus) - (ra.main.gross + ra.main.bonus));
+    const od = $('offer-delta');
+    od.className = 'delta' + (Math.abs(diff) < 1 ? ' flat' : '');
+    od.innerHTML = Math.abs(diff) < 1
+      ? `<svg><use href="#compare"/></svg><span>两份 offer 全年到手基本一样，可以比公积金比例、通勤和成长空间。</span>`
+      : `<svg><use href="#${diff > 0 ? 'up' : 'compare'}"/></svg><span>B 比 A 全年${diff > 0 ? '多' : '少'}到手 <b>¥${whole(Math.abs(diff))}</b>（月均 ${whole(Math.abs(diff) / 12)}）。税前差 ${whole(Math.abs(grossDiff))} 元，实际落袋 ${grossDiff !== 0 ? pct(Math.abs(diff / grossDiff)) : '—'}。公积金另有 B ${wan(rb.main.fund)} 万 / A ${wan(ra.main.fund)} 万进个人账户。</span>`;
+    const maxNet = Math.max(ra.main.net, rb.main.net, 1);
+    $('offer-bars').innerHTML = [['A', ra.main.net, 'var(--sub)'], ['B', rb.main.net, 'var(--net)']]
+      .map(([n, v, c]) => bar(`offer ${n} 全年到手`, '¥' + whole(v), v / maxNet, c)).join('');
+
+    const m = C.marginal(state, raiseDelta);
+    $('raise-read').textContent = '¥' + whole(raiseDelta);
+    $('raise-slider').value = String(raiseDelta);
+    $('marginal-pill').textContent = '落袋 ' + pct(m.keepRate);
+    $('marginal-metrics').innerHTML = [
+      ['全年多到手', whole(m.yearGain), '元'], ['月均多到手', whole(m.monthGain), '元'], ['被吃掉', whole(raiseDelta * 12 - m.yearGain), '元']
+    ].map(([t, v, u]) => `<div class="metric"><span>${t}</span><strong>${esc(v)}</strong><small>${u}</small></div>`).join('');
+
+    const t = result.main;
+    const gross = t.gross + t.bonus;
+    $('year-total-pill').textContent = '税前 ¥' + whole(gross);
+    const items = [
+      ['到手（打进工资卡）', t.net, 'var(--net)'], ['公积金个人部分', t.fund, 'var(--fund)'],
+      ['社保个人部分', t.social, 'var(--si)'], ['个人所得税', t.taxTotal, 'var(--tax)'], ['税后扣款', t.afterTax, 'var(--other)']
+    ].filter(x => x[1] > 0);
+    const base = Math.max(gross, 1);
+    $('year-bars').innerHTML = items.map(([n, v, c]) => bar(n, '¥' + whole(v) + ' · ' + pct(v / base), v / base, c)).join('');
+    $('year-note').innerHTML = `单位另为你缴纳五险一金 <b style="color:var(--fund)">¥${whole(result.cost.employer)}</b>，公司总成本 ¥${whole(result.cost.total)}。全年综合税负 ${pct(result.effectiveRate)}，到手率 ${pct(result.netRate)}。公积金个人部分虽从工资里扣，但仍进你的账户。`;
+  }
+  function bar(name, value, ratio, color) {
+    return `<div class="bar-item"><div><span>${esc(name)}</span><b>${esc(value)}</b></div><div class="bar-track"><i style="width:${clamp(ratio * 100, 0, 100).toFixed(1)}%;background:${color}"></i></div></div>`;
+  }
+  function trapText(bonus) {
+    if (bonus <= 0) return '年终奖单独计税一年只能用一次；季度奖、绩效奖需并入综合所得。';
+    const edges = [36000, 144000, 300000, 420000, 660000, 960000];
+    for (const e of edges) {
+      if (bonus > e && bonus - C.bonusTax(bonus) < e - C.bonusTax(e) - 0.01) {
+        const target = e - C.bonusTax(e);
+        const row = C.MONTH_TABLE.find(x => (e + 1) / 12 <= x[0]) || C.MONTH_TABLE[6];
+        const fix = Math.ceil((target - row[2]) / (1 - row[1]));
+        return `<b>落在跳档盲区：</b>发 ${whole(bonus)} 元的到手，比发 ${whole(e)} 元还少 ${whole((e - C.bonusTax(e)) - (bonus - C.bonusTax(bonus)))} 元。要么降到 ${whole(e)}，要么至少发到 ${whole(fix)}。`;
+      }
+    }
+    const next = edges.find(e => e > bonus);
+    return next
+      ? `当前不在跳档盲区。下一个临界点是 ${whole(next)} 元，跨过后税率会从 ${Math.round(bonusRate(bonus) * 100)}% 跳到 ${Math.round(bonusRate(next + 1) * 100)}%。`
+      : '当前不在跳档盲区，已适用最高 45% 档。';
+  }
+
+  /* ── 迷你结果条 ── */
+  function renderSticky() {
+    const r = result.main.rows[month - 1];
+    $('sticky-label').textContent = `${month} 月到手`;
+    $('sticky-value').textContent = '¥' + money(r.net);
+  }
+  function onScroll() {
+    const show = scene === 'calc' && $('app-scroll').scrollTop > 300;
+    $('sticky-net').classList.toggle('on', show);
+  }
+
+  /* ── 场景切换 ── */
+  function showScene(next) {
+    scene = next;
+    ['calc', 'slip', 'compare'].forEach(k => { $('scene-' + k).hidden = k !== next; });
+    document.querySelectorAll('[data-scene]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scene === next)));
+    if (next === 'compare') { offerA = pickOffer(state); }
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    $('app-scroll').scrollTop = 0;
+    recalc();
+    onScroll();
+    const first = $('scene-' + next);
+    first.querySelectorAll('.enter').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+  }
+
+  /* ── 弹层 ── */
+  function openSheet(title, html) {
+    $('sheet-title').textContent = title;
+    $('sheet-content').innerHTML = html;
+    if (!$('sheet').open) $('sheet').showModal();
+    $('sheet-content').scrollTop = 0;
+  }
+  const closeSheet = () => { if ($('sheet').open) $('sheet').close(); };
+
+  function plansSheet() {
+    openSheet('示例方案', `<p>下面是设计稿自带的示例参数，点一下即可套用。正式版本会按账户保存本机草稿与云端方案。</p>`
+      + presets.map((p, i) => `<button type="button" class="preset" data-preset="${i}" aria-pressed="${i === activePreset}"><span><strong>${esc(p.name)}</strong><small>${esc(p.desc)}</small></span><span class="num">¥${whole(C.compute(p.data).main.avgNet)}/月</span></button>`).join('')
+      + `<button type="button" class="btn primary" id="save-preset" style="width:100%;margin-top:6px">把当前参数存为示例方案</button>`);
+  }
+  function explainSheet() {
+    const ytable = C.YEAR_TABLE.map((b, i) => {
+      const lo = i ? C.YEAR_TABLE[i - 1][0] : 0;
+      const label = b[0] === Infinity ? `超过 ${whole(lo)}` : `${whole(lo)} – ${whole(b[0])}`;
+      const hit = result.main.rows[month - 1].cumTaxable > lo && result.main.rows[month - 1].cumTaxable <= b[0];
+      return `<tr class="${hit ? 'hl' : ''}"><td>${label}</td><td>${Math.round(b[1] * 100)}%</td><td>${whole(b[2])}</td></tr>`;
+    }).join('');
+    const mtable = C.MONTH_TABLE.map((b, i) => {
+      const lo = i ? C.MONTH_TABLE[i - 1][0] : 0;
+      const label = b[0] === Infinity ? `超过 ${whole(lo)}` : `${whole(lo)} – ${whole(b[0])}`;
+      return `<tr><td>${label}</td><td>${Math.round(b[1] * 100)}%</td><td>${whole(b[2])}</td></tr>`;
+    }).join('');
+    openSheet('怎么算的', `<h3>1 · 每月到手</h3><p>到手 = 税前月薪 + 当月年终奖 − 社保个人部分 − 公积金个人部分 − 当月预扣个税 − 税后扣款。公积金虽然扣走，但仍进你的个人账户。</p>
+      <h3>2 · 累计预扣预缴（工资个税）</h3><p>本月预扣 =（累计收入 − 累计 5,000/月 − 累计三险一金 − 累计专项附加 − 累计其他扣除）× 税率 − 速算扣除数 − 此前已预扣。所以年初税少、跳档后税多，工资条上的到手会逐月变小。</p>
+      <table><caption>综合所得年度税率表（高亮为当前累计所在档）</caption><thead><tr><th>累计应纳税所得额</th><th>税率</th><th>速算扣除</th></tr></thead><tbody>${ytable}</tbody></table>
+      <h3>3 · 年终奖单独计税</h3><p>奖金 ÷ 12 找下表档位，税额 = 奖金 × 税率 − 速算扣除数。一年只能用一次，政策执行至 2027-12-31。也可以选择并入综合所得，页面会自动比较两者。</p>
+      <table><caption>按月换算后的综合所得税率表</caption><thead><tr><th>奖金 ÷ 12</th><th>税率</th><th>速算扣除</th></tr></thead><tbody>${mtable}</tbody></table>
+      <h3>4 · 口径与边界</h3><ul><li>只算居民个人工资薪金与全年一次性奖金，不含劳务报酬、股权激励、经营所得。</li><li>工伤、生育保险个人不缴；医疗含生育按各地合并口径示例。</li><li>社保与公积金基数按当地上下限截断，公积金比例 0–12%。</li><li>不含公益性捐赠、大病医疗汇算扣除与年度汇算补退税。</li><li>城市预设为示例值，正式接入前须按当地社保年度公布数据核对。</li></ul>`);
+  }
+  function standardSheet() {
+    const rows = [
+      ['子女教育', '每孩 2,000 元/月', '学前教育至全日制学历教育'],
+      ['3 岁以下婴幼儿照护', '每孩 2,000 元/月', '可由父母一方或双方分摊'],
+      ['赡养老人', '独生 3,000 元/月', '非独生分摊，每人不超过 1,500'],
+      ['住房贷款利息', '1,000 元/月', '首套住房，最长 240 个月'],
+      ['住房租金', '1,500 / 1,100 / 800 元/月', '按城市档位，与房贷利息二选一'],
+      ['继续教育', '学历 400 元/月', '同一学历最长 48 个月；职业资格 3,600 元/年'],
+      ['个人养老金', '最高 1,000 元/月', '全年 12,000 元限额，领取时另计税']
+    ];
+    openSheet('专项附加扣除标准', `<p>按现行标准列示，实际以个人所得税 App 中填报的额度为准。</p><table><thead><tr><th>项目</th><th>标准</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r[0]}<div style="font-size:9.5px;opacity:.75;margin-top:3px">${r[2]}</div></td><td>${r[1]}</td></tr>`).join('')}</tbody></table>`);
+  }
+  function citiesSheet() {
+    openSheet('城市社保预设（示例）', `<p>下表是设计稿内置的示例区间，量级参考各地社保年度公布数据，<b>不是实时口径</b>。选择「自定义」城市可以直接在参数台里填自己的上下限。</p>
+      <table><thead><tr><th>城市</th><th>社保下限</th><th>社保上限</th><th>公积金上限</th></tr></thead><tbody>${C.CITIES.map(c => `<tr class="${c.key === state.city ? 'hl' : ''}"><td>${c.name}</td><td>${whole(c.floor)}</td><td>${whole(c.ceil)}</td><td>${whole(c.fundCeil)}</td></tr>`).join('')}</tbody></table>
+      <h3>个人缴纳比例</h3><ul><li>养老 8%，失业 0.5%，工伤 / 生育个人不缴。</li><li>医疗各地不同，北京另加大病 3 元/月。</li><li>公积金 0–12%，单位与个人同比例。</li></ul>`);
+  }
+  function detailSheet() {
+    const rows = result.main.rows.map(r => `<tr class="${r.month === month ? 'hl' : ''}" data-jump="${r.month}" style="cursor:pointer"><td>${r.month} 月</td><td>${whole(r.net)}</td><td>${whole(r.social + r.fund)}</td><td>${whole(r.taxTotal)}</td><td>${Math.round(r.rate * 100)}%</td></tr>`).join('');
+    openSheet('全年逐月明细', `<p>点任意一行切到那个月的工资条。单位：元。</p><table><thead><tr><th>月份</th><th>到手</th><th>五险一金</th><th>个税</th><th>税率档</th></tr></thead><tbody>${rows}</tbody></table>
+      <table style="margin-top:14px"><tbody><tr><td>全年合计</td><td>${whole(result.main.net)}</td><td>${whole(result.main.social + result.main.fund)}</td><td>${whole(result.main.taxTotal)}</td><td>—</td></tr></tbody></table>`);
+  }
+  function monthSheet() {
+    openSheet('选择月份', `<p>切换主卡与工资条显示的月份。</p><div class="chips">${result.main.rows.map(r => `<button type="button" class="chip" data-jump="${r.month}" aria-pressed="${r.month === month}" style="min-width:74px;justify-content:center">${r.month} 月<small>${r.active ? (r.net / 1000).toFixed(1) + 'k' : '—'}</small></button>`).join('')}</div>`);
+  }
+  function exportSheet() {
+    openSheet('导出工资条', `<p>纯文本工资条，可直接粘进备忘录或聊天窗口。</p><pre id="export-text">${esc(slipText())}</pre>
+      <div class="actions"><button type="button" class="btn" id="sheet-copy"><svg><use href="#copy"/></svg>复制</button><button type="button" class="btn primary" id="sheet-download"><svg><use href="#share"/></svg>下载 .txt</button></div>`);
+  }
+  function slipText() {
+    const r = result.main.rows[month - 1], ins = result.insurance.items;
+    const L = [];
+    L.push(`【${month} 月工资条 · 示例测算】`);
+    L.push(`城市：${result.city.name} 社保基数：${whole(result.insurance.base)} 公积金基数：${whole(result.insurance.fundBase)} × ${num(result.insurance.rate)}%`);
+    L.push('────────────────');
+    L.push(`应发月薪     ${money(r.gross)}`);
+    if (r.bonus > 0) L.push(`全年一次性奖金  ${money(r.bonus)}`);
+    L.push(`应发合计     ${money(r.gross + r.bonus)}`);
+    L.push('────────────────');
+    if (r.active) {
+      L.push(`养老保险 8%    −${money(ins[0].value)}`);
+      L.push(`医疗保险      −${money(ins[1].value)}`);
+      L.push(`失业保险 0.5%   −${money(ins[2].value)}`);
+      L.push(`住房公积金      −${money(r.fund)}`);
+    }
+    if (r.otherPre > 0) L.push(`其他税前扣除    −${money(r.otherPre)}`);
+    L.push(`个税（工资）    −${money(r.tax)} ${Math.round(r.rate * 100)}% 档`);
+    if (r.bonusTax > 0) L.push(`个税（年终奖）  −${money(r.bonusTax)} 单独计税`);
+    if (r.afterTax > 0) L.push(`税后扣款     −${money(r.afterTax)}`);
+    L.push('────────────────');
+    L.push(`实发到手     ${money(r.net)}`);
+    L.push('────────────────');
+    L.push(`全年到手 ${money(result.main.net)} 月均 ${money(result.main.avgNet)} 全年个税 ${money(result.main.taxTotal)}`);
+    L.push(`年终奖口径：${result.bonusMode === 'separate' ? '单独计税' : '并入综合所得'}${result.auto ? '（自动择优）' : ''}`);
+    L.push('按累计预扣预缴法测算，仅供设计预览参考。');
+    return L.join('\n');
+  }
+  async function copySlip() {
+    const text = slipText();
+    let ok = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); ok = true; }
+    } catch { ok = false; }
+    if (!ok) ok = legacyCopy(text);
+    toast(ok ? '工资条已复制' : '复制失败，请在导出弹层里长按文本复制');
+  }
+  function legacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.left = '0'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { ok = false; }
+    ta.remove();
+    return ok;
+  }
+  function downloadSlip() {
+    const blob = new Blob([slipText()], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `工资条-${month}月-示例.txt`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast('已导出文本文件');
+  }
+  let toastTimer = 0;
+  function toast(msg) {
+    const el = $('toast');
+    el.textContent = msg; el.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('on'), 1900);
+  }
+
+  /* ── 事件 ── */
+  document.addEventListener('input', e => {
+    const el = e.target;
+    if (syncing) return;
+    if (el.dataset && el.dataset.field) {
+      const k = el.dataset.field;
+      if (k === 'cityFloor' || k === 'cityCeil') {
+        const custom = C.CITIES.find(c => c.key === 'custom');
+        if (k === 'cityFloor') { custom.floor = Math.max(0, nOf(el.value)); custom.fundFloor = Math.min(custom.fundFloor, custom.floor); }
+        else { custom.ceil = Math.max(custom.floor, nOf(el.value)); custom.fundCeil = custom.ceil; }
+      } else state[k] = el.value;
+      if (k === 'city') {
+        const c = C.CITIES.find(x => x.key === el.value);
+        state.fundRate = c.fund;
+        if (offerA) offerA.city = el.value;
+      }
+      if (k === 'startMonth') month = Math.max(month, nOf(el.value));
+      activePreset = -1;
+      recalc();
+    } else if (el.dataset && el.dataset.offer) {
+      const o = el.dataset.offer === 'a' ? offerA : offerB;
+      o[el.dataset.key] = el.value;
+      renderCompare();
+    } else if (el.id === 'raise-slider') {
+      raiseDelta = nOf(el.value);
+      renderCompare();
+    }
+  });
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button,[data-month],[data-jump]');
+    if (!t) return;
+    const d = t.dataset;
+    if (d.scene) return showScene(d.scene);
+    if (d.month) { month = Number(d.month); recalc(); return; }
+    if (d.jump) { month = Number(d.jump); closeSheet(); recalc(); return; }
+    if (d.base) { state.baseMode = d.base; activePreset = -1; return recalc(); }
+    if (d.fundbase) { state.fundMode = d.fundbase; activePreset = -1; return recalc(); }
+    if (d.elder) { state.elder = d.elder; activePreset = -1; return recalc(); }
+    if (d.housing) { state.housing = d.housing; activePreset = -1; return recalc(); }
+    if (d.bonusmode) { state.bonusMode = d.bonusmode; activePreset = -1; return recalc(); }
+    if (d.chart) { chartMode = d.chart; return renderChart(); }
+    if (d.toggle === 'study') { state.study = !state.study; activePreset = -1; return recalc(); }
+    if (d.step) {
+      const k = d.step;
+      state[k] = clamp(Math.round(nOf(state[k])) + Number(d.delta), 0, 6);
+      activePreset = -1;
+      return recalc();
+    }
+    if (d.preset !== undefined) {
+      const i = Number(d.preset);
+      Object.assign(state, presets[i].data);
+      activePreset = i; month = Math.max(1, nOf(state.startMonth));
+      offerA = pickOffer(state);
+      closeSheet(); recalc(); toast('已套用：' + presets[i].name);
+      return;
+    }
+    switch (t.id) {
+      case 'theme-toggle': {
+        const on = $('phone').classList.toggle('dark');
+        t.setAttribute('aria-pressed', String(on));
+        t.textContent = on ? '浅色' : '深色';
+        renderChart();
+        return;
+      }
+      case 'text-toggle': {
+        const on = document.documentElement.classList.toggle('large-text');
+        t.setAttribute('aria-pressed', String(on));
+        return;
+      }
+      case 'plans-button': return plansSheet();
+      case 'close-sheet': return closeSheet();
+      case 'insight-button': case 'invite-button': return showScene('compare');
+      case 'explain-button': return explainSheet();
+      case 'standard-button': return standardSheet();
+      case 'detail-button': return detailSheet();
+      case 'export-button': return exportSheet();
+      case 'slip-month-button': return monthSheet();
+      case 'copy-slip-button': case 'sheet-copy': return copySlip();
+      case 'download-slip-button': case 'sheet-download': return downloadSlip();
+      case 'employer-switch': showEmployer = !showEmployer; return renderSlip();
+      case 'sticky-top': $('app-scroll').scrollTo({ top: 0, behavior: 'smooth' }); return;
+      case 'sync-offer-button': offerA = pickOffer(state); renderCompare(); return toast('A 已同步当前参数');
+      case 'save-preset': {
+        const snapshot = Object.assign({}, state);
+        presets = presets.concat([{ name: `我的方案 ${presets.length - PRESETS.length + 1}`, desc: `${C.CITIES.find(c => c.key === state.city).name} · 月薪 ${whole(state.gross)} · 年终奖 ${whole(state.bonus)}`, data: snapshot }]);
+        activePreset = presets.length - 1;
+        plansSheet(); toast('已存为示例方案');
+        return;
+      }
+      case 'reset-button': {
+        Object.assign(state, C.defaults);
+        const custom = C.CITIES.find(c => c.key === 'custom');
+        custom.floor = 0; custom.ceil = 999999; custom.fundFloor = 0; custom.fundCeil = 999999;
+        activePreset = 0; month = 1; chartMode = 'salary'; offerA = pickOffer(state);
+        recalc(); toast('已恢复默认示例');
+        return;
+      }
+      case 'random-button': {
+        const pick = a => a[Math.floor(Math.random() * a.length)];
+        const city = pick(C.CITIES.filter(c => c.key !== 'custom'));
+        Object.assign(state, {
+          city: city.key, gross: pick([12000, 18000, 25000, 32000, 45000, 60000, 80000]),
+          fundRate: city.fund, bonus: pick([0, 20000, 36000, 60000, 120000, 200000]),
+          children: pick([0, 1, 2]), infants: pick([0, 0, 1]), elder: pick(['only', 'share', 'none']),
+          housing: pick(['loan', 'rent', 'none']), rentTier: pick([0, 1, 2]),
+          study: Math.random() < .3, pension: pick([0, 0, 1000]), startMonth: 1, baseMode: 'auto', fundMode: 'auto'
+        });
+        activePreset = -1; offerA = pickOffer(state);
+        recalc(); toast('换了一组示例参数');
+        return;
+      }
+    }
+    if (t.classList.contains('hit') || t.hasAttribute('data-month')) {
+      month = Number(t.getAttribute('data-month'));
+      recalc();
+    }
+  });
+
+  $('plot').addEventListener('keydown', e => {
+    const hit = e.target.closest('[data-month]');
+    if (!hit) return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); month = Number(hit.dataset.month); recalc(); }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      month = clamp(month + (e.key === 'ArrowRight' ? 1 : -1), 1, 12);
+      recalc();
+      const next = $('plot').querySelector(`[data-month="${month}"]`);
+      if (next) next.focus({ preventScroll: true });
+    }
+  });
+    $('app-scroll').addEventListener('scroll', onScroll, { passive: true });
+  $('sheet').addEventListener('click', e => { if (e.target === $('sheet')) closeSheet(); });
+  document.querySelectorAll('.preview-tools button').forEach(b => b.setAttribute('type', 'button'));
+
+  showScene('calc');
+  globalThis.SalaryPreview = { get state() { return state; }, get result() { return result; }, setMonth: m => { month = m; recalc(); }, showScene };
+})();</script>
+</body></html>
