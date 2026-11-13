@@ -138,7 +138,7 @@ struct SalaryCompareScene: View {
             SalaryBarList(bars: presentation.yearBars)
             Text(presentation.yearNote).font(.caption2).foregroundStyle(SalaryStyle.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-        }.accessibilityIdentifier("salary-year")
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("salary-year")
     }
 
     private func fact(_ title: String, _ value: String, color: Color = SalaryStyle.text) -> some View {

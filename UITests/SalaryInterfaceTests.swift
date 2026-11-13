@@ -30,10 +30,12 @@ final class SalaryInterfaceTests: XCTestCase {
         XCTFail("Salary panel was not reachable: \(element)")
     }
     private func switchOn(_ toggle: XCUIElement) {
+        // The row-wide switch element centres on its label, which does not toggle; tap the knob itself.
+        let knob = toggle.switches.firstMatch
         for _ in 0..<3 {
             if (toggle.value as? String) == "1" { return }
             Thread.sleep(forTimeInterval: 0.5)
-            toggle.tap()
+            knob.tap()
             Thread.sleep(forTimeInterval: 0.4)
         }
         XCTAssertEqual(toggle.value as? String, "1", "The employer toggle never switched on")
