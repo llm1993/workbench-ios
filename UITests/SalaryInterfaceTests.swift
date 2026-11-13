@@ -12,10 +12,31 @@ final class SalaryInterfaceTests: XCTestCase {
     }
     private func reveal(_ element: XCUIElement, app: XCUIApplication) {
         for _ in 0..<12 {
-            if element.exists && element.isHittable { return }
+            if element.exists && element.isHittable {
+                // Let the swipe finish decelerating so the next tap lands on the settled row.
+                Thread.sleep(forTimeInterval: 0.5)
+                return
+            }
             app.scrollViews["salary-scroll"].swipeUp()
         }
         XCTFail("Salary control was not reachable: \(element)")
+    }
+    private func revealArea(_ element: XCUIElement, app: XCUIApplication) {
+        for _ in 0..<12 {
+            // Plain containers expose no activation point, so isHittable stays false even on screen.
+            if element.exists && app.frame.intersects(element.frame) { return }
+            app.scrollViews["salary-scroll"].swipeUp()
+        }
+        XCTFail("Salary panel was not reachable: \(element)")
+    }
+    private func switchOn(_ toggle: XCUIElement) {
+        for _ in 0..<3 {
+            if (toggle.value as? String) == "1" { return }
+            Thread.sleep(forTimeInterval: 0.5)
+            toggle.tap()
+            Thread.sleep(forTimeInterval: 0.4)
+        }
+        XCTAssertEqual(toggle.value as? String, "1", "The employer toggle never switched on")
     }
     private func revealMonth(_ month: Int, app: XCUIApplication) {
         let strip = app.scrollViews["salary-month-strip"]
@@ -81,7 +102,7 @@ final class SalaryInterfaceTests: XCTestCase {
         revealMonth(12, app: app); december.tap()
         XCTAssertTrue(app.staticTexts["12 月工资条"].waitForExistence(timeout: 5))
         let employer = app.switches["salary-employer-toggle"]
-        reveal(employer, app: app); employer.tap()
+        reveal(employer, app: app); switchOn(employer)
         XCTAssertTrue(app.staticTexts["单位缴纳"].waitForExistence(timeout: 5))
         capture(app, "salary-slip-employer")
         let formula = app.staticTexts["salary-tax-formula"]
@@ -110,7 +131,7 @@ final class SalaryInterfaceTests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.8)
         capture(app, "salary-raise-dark")
         let year = app.descendants(matching: .any)["salary-year"]
-        reveal(year, app: app)
+        revealArea(year, app: app)
         capture(app, "salary-year-dark")
     }
 
