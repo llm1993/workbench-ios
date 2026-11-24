@@ -20,6 +20,7 @@ final class Store: ObservableObject {
     private var cloudSyncTask: Task<Void, Never>?
     private var cloudListRevision = UUID()
     private var cloudOpenRevision = UUID()
+    private var cloudBodyRequests: [String: UUID] = [:]
     private var cloudPagination = CloudListPagination()
     private var lastCloudOverviewAt: Date?
     private var preservingListDuringSync = false
@@ -563,7 +564,7 @@ final class Store: ObservableObject {
         openDetail(id: entry.id)
     }
 
-    private func openDetail(id: String) {
+    private func openDetail(id: String, fetchedCloudBody: Bool = false) {
         cloudOpenRevision = UUID()
         guard var detail = database.entry(id: id) else { return }
         if workspace != nil {
@@ -587,7 +588,8 @@ final class Store: ObservableObject {
         readerSession = UUID()
         autoFulltextTask?.cancel()
         readerLoadingFulltext = fulltextRequests[detail.id] != nil
-        readerLoadingBody = workspace != nil && Int(detail.id) != nil
+        let needsCloudBody = workspace != nil && Int(detail.id) != nil && !detail.hasCachedCloudBody
+        readerLoadingBody = needsCloudBody
         readerShowsFulltext = true
         let prepared = [readerNextPage, readerPreviousPage].compactMap { $0 }.first { $0.id == detail.id && !$0.html.isEmpty }
         readerEntry = detail
@@ -595,11 +597,15 @@ final class Store: ObservableObject {
         prepareReaderNeighbors()
         reloadFeeds()
         if workspace != nil {
-            let session = readerSession
-            Task { await loadCloudBody(id: id, session: session) }
+            if needsCloudBody {
+                let session = readerSession
+                Task { await loadCloudBody(id: id, session: session) }
+            }
             if let index = entries.firstIndex(where: { $0.id == id }), index >= entries.count - 3, hasMore { loadMore() }
         }
-        if !isClearingCaches, fulltextRequests[detail.id] != nil || (database.feed(id: detail.feedID)?.autoFulltext == true && !detail.hasFulltext) {
+        let allowAutoFulltext = workspace == nil || needsCloudBody || fetchedCloudBody
+        if !isClearingCaches, allowAutoFulltext,
+           fulltextRequests[detail.id] != nil || (database.feed(id: detail.feedID)?.autoFulltext == true && !detail.hasFulltext) {
             let session = readerSession
             autoFulltextTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: 350_000_000)
@@ -873,8 +879,8 @@ final class Store: ObservableObject {
     }
 
     func extractFulltext(automatic: Bool = false, force: Bool = false) async {
-        if workspace != nil { await cloudFulltext(); return }
-        guard let current = readerEntry, !current.url.isEmpty, !isClearingCaches else { return }
+        guard let current = readerEntry, !isClearingCaches, workspace != nil || !current.url.isEmpty else { return }
+        if workspace != nil, readerLoadingFulltext { return }
         let session = readerSession
         let generation = cacheGeneration
         if !force, fulltextRequests[current.id] == nil, let cached = database.entry(id: current.id), cached.hasFulltext {
@@ -885,6 +891,7 @@ final class Store: ObservableObject {
             if !automatic { showBanner("正文已缓存在本机，直接阅读", isError: false) }
             return
         }
+        if workspace != nil { await cloudFulltext(); return }
         let request: (id: UUID, task: Task<String, Error>)
         if let existing = fulltextRequests[current.id] { request = existing }
         else {
@@ -1316,22 +1323,38 @@ extension Store {
         if s != settings { settings = s }
     }
 
+    func refreshReaderBody() async {
+        guard workspace != nil, let id = readerEntry?.id, Int(id) != nil,
+              !readerLoadingBody, !readerLoadingFulltext, !isClearingCaches else { return }
+        readerLoadingBody = true
+        await loadCloudBody(id: id, session: readerSession)
+    }
+
     private func loadCloudBody(id: String, session: UUID) async {
         guard let workspace, let serverID = Int(id), readerSession == session else { return }
+        let request = UUID()
+        cloudBodyRequests[id] = request
         let generation = cacheGeneration, contentVersion = cloudContentVersion
         let stateVersion = cloudStateVersion
-        defer { if readerSession == session { readerLoadingBody = false } }
+        defer {
+            if cloudBodyRequests[id] == request {
+                cloudBodyRequests[id] = nil
+                if readerSession == session { readerLoadingBody = false }
+            }
+        }
         do {
             let result = try await workspace.request("/api/weidu/entries/\(serverID)")
             try Task.checkCancellation()
-            guard generation == cacheGeneration, contentVersion == cloudContentVersion else { return }
+            guard cloudBodyRequests[id] == request, generation == cacheGeneration, contentVersion == cloudContentVersion else { return }
             _ = try database.mergeCloudEntry(result["entry"], pending: cloudJournal?.state(id), preserveState: stateVersion != cloudStateVersion)
-            guard readerSession == session, let entry = database.entry(id: id) else { return }
-            readerEntry = entry; readerHTML = ReaderHTML.document(entry: entry, settings: settings, showFulltext: readerShowsFulltext)
-            prepareReaderNeighbors()
+            applyCloudReaderBody(id: id, session: session)
         } catch is CancellationError { }
         catch let error as URLError where error.code == .cancelled { }
-        catch { if readerSession == session, generation == cacheGeneration { showBanner("正文同步未完成，保留已缓存内容：" + error.localizedDescription, isError: true) } }
+        catch {
+            if cloudBodyRequests[id] == request, readerSession == session, generation == cacheGeneration, contentVersion == cloudContentVersion {
+                showBanner("正文同步未完成，保留已缓存内容：" + error.localizedDescription, isError: true)
+            }
+        }
     }
 
     private func cloudFulltext() async {
@@ -1347,22 +1370,42 @@ extension Store {
             let result = try await workspace.request("/api/weidu/entries/\(id)/fulltext", method: "POST")
             guard generation == cacheGeneration else { return }
             _ = try database.mergeCloudEntry(result["entry"], pending: cloudJournal?.state(current.id), preserveState: stateVersion != cloudStateVersion)
-            guard readerSession == session, let entry = database.entry(id: current.id) else { return }
-            readerEntry = entry; readerShowsFulltext = true
-            readerHTML = ReaderHTML.document(entry: entry, settings: settings); prepareReaderNeighbors()
+            applyCloudReaderBody(id: current.id, session: session, preferFulltext: true)
         } catch { if readerSession == session { showBanner("抓正文失败：" + error.localizedDescription, isError: true) } }
     }
 
+    private func applyCloudReaderBody(id: String, session: UUID, preferFulltext: Bool = false) {
+        if readerSession == session, let entry = database.entry(id: id) {
+            readerEntry = entry
+            if preferFulltext { readerShowsFulltext = true }
+            readerHTML = ReaderHTML.document(entry: entry, settings: settings, showFulltext: readerShowsFulltext)
+            prepareReaderNeighbors()
+        } else if readerNextPage?.id == id || readerPreviousPage?.id == id {
+            // A late response can fill a neighboring article's cache without changing the visible one.
+            prepareReaderNeighbors()
+        }
+    }
+
     func openCloudArticle(_ id: String) async {
-        guard let workspace, let number = Int(id) else { return }
+        guard let workspace, let number = Int(id), number > 0 else { return }
+        let cachedID = Database.cloudID(number)
+        if database.listEntry(id: cachedID) != nil {
+            openDetail(id: cachedID)
+            return
+        }
+        let generation = cacheGeneration
         let stateVersion = cloudStateVersion
         let revision = UUID(); cloudOpenRevision = revision
         do {
             let result = try await workspace.request("/api/weidu/entries/\(number)")
-            try Task.checkCancellation(); guard revision == cloudOpenRevision else { return }
+            try Task.checkCancellation(); guard revision == cloudOpenRevision, generation == cacheGeneration else { return }
             let entryID = try database.mergeCloudEntry(result["entry"], pending: cloudJournal?.state(Database.cloudID(result["entry"])), preserveState: stateVersion != cloudStateVersion)
-            openDetail(id: entryID)
-        } catch { if revision == cloudOpenRevision, !Task.isCancelled { showBanner(error.localizedDescription, isError: true) } }
+            openDetail(id: entryID, fetchedCloudBody: true)
+        } catch {
+            if revision == cloudOpenRevision, generation == cacheGeneration, !Task.isCancelled {
+                showBanner(error.localizedDescription, isError: true)
+            }
+        }
     }
 
     private func markCloudScopeRead() async {

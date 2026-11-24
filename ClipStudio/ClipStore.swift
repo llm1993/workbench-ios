@@ -5,12 +5,19 @@ import UIKit
 final class ClipStore: ObservableObject {
     @Published var account: Account? {
         didSet {
+            if oldValue.map(WorkspaceScope.init) != workspaceScope {
+                restoreWorkspaceProfile()
+            }
             if oldValue.map(ClipboardContext.init) != clipboardContext {
                 resetClipboardContext()
             }
             lanTransfers.configure(account: needsUnlock ? nil : account)
         }
     }
+    @Published private(set) var workspaceProfile: WorkspaceProfile?
+    @Published private(set) var workspaceProfileFailure: String?
+    @Published private(set) var workspaceProfileLoading = false
+    @Published private(set) var workspaceNeedsLogin = false
     @Published var rows: [ClipRow] = []
     @Published var busy = false
     @Published var error: String?
@@ -34,6 +41,9 @@ final class ClipStore: ObservableObject {
     @Published private(set) var deletionFailure: ClipboardDeletionFailure?
     let lanTransfers = LANTransferStore()
     private let favorites: ClipboardFavorites
+    private let defaults: UserDefaults
+    private var workspaceProfileRequest: UUID?
+    private var workspaceProfileUpdated: Date?
     private let deletionWait: () async throws -> Void
     private var deletionTask: Task<Void, Never>?
     @Published private(set) var clipboardRevision = UUID()
@@ -48,6 +58,7 @@ final class ClipStore: ObservableObject {
     init(transport: URLSession? = nil, defaults: UserDefaults = .standard,
          deletionWait: @escaping () async throws -> Void = { try await Task.sleep(for: .seconds(5)) }) {
         favorites = ClipboardFavorites(defaults: defaults)
+        self.defaults = defaults
         self.deletionWait = deletionWait
         #if DEBUG
         self.transport = transport ?? (PreviewTransport.enabled ? PreviewTransport.session() : nil)
@@ -55,7 +66,8 @@ final class ClipStore: ObservableObject {
         self.transport = transport
         #endif
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--design-preview") {
+        if PreviewTransport.enabled {
+            if ProcessInfo.processInfo.arguments.contains("--preview-signed-out") { return }
             AssetsPreviewFixtures.reset()
             account = PreviewTransport.clipboardAccount
             rows = PreviewTransport.resetClipboard()
@@ -63,21 +75,98 @@ final class ClipStore: ObservableObject {
             // UI fixtures start with no local marks so each test is deterministic.
             favoriteReferences = []
             lastSync = Date()
+            workspaceProfile = try? JSONDecoder().decode(WorkspaceProfile.self, from: Data(PreviewTransport.profileJSON.utf8))
+            workspaceProfileUpdated = .now
             lanTransfers.configure(account: account)
             return
         }
         #endif
         do { account = try Keychain.load() }
         catch { self.error = error.localizedDescription }
+        restoreWorkspaceProfile()
         favoriteReferences = account.map { favorites.load(for: $0) } ?? []
         lanTransfers.configure(account: account)
     }
 
     var api: ClipAPI? { account.map { ClipAPI(base: $0.base, token: $0.token, transport: transport) } }
+    var workspaceScope: WorkspaceScope? { account.map(WorkspaceScope.init) }
+    private var workspaceProfileKey: String? { workspaceScope.map { "workspace.catalog." + $0.storageID } }
     var clipboardContext: ClipboardContext? { account.map(ClipboardContext.init) }
     var visibleRows: [ClipRow] {
         let hidden = pendingDeletion?.references ?? []
         return rows.filter { !hidden.contains(ClipboardFavorites.reference($0)) }
+    }
+
+    private func restoreWorkspaceProfile() {
+        workspaceProfileRequest = nil
+        workspaceProfileUpdated = nil
+        workspaceProfileLoading = false
+        workspaceProfileFailure = nil
+        workspaceNeedsLogin = false
+        workspaceProfile = nil
+        if let key = workspaceProfileKey, let data = defaults.data(forKey: key),
+           let profile = try? JSONDecoder().decode(WorkspaceProfile.self, from: data),
+           profile.username == account?.username {
+            workspaceProfile = profile
+        }
+    }
+
+    private func acceptWorkspaceProfile(_ profile: WorkspaceProfile) {
+        workspaceProfileRequest = nil
+        workspaceProfileLoading = false
+        workspaceProfileFailure = nil
+        workspaceNeedsLogin = false
+        workspaceProfileUpdated = .now
+        workspaceProfile = profile
+        // Cache menu metadata only. Admin controls are restored from a live response.
+        let cached = WorkspaceProfile(username: profile.username, is_admin: false, apps: profile.apps)
+        if let key = workspaceProfileKey, let data = try? JSONEncoder().encode(cached) {
+            defaults.set(data, forKey: key)
+        }
+    }
+
+    func acceptWorkspaceLayout(_ layout: WorkspaceAppLayout) {
+        guard let profile = workspaceProfile else { return }
+        acceptWorkspaceProfile(WorkspaceProfile(username: profile.username, is_admin: profile.is_admin, apps: layout.apps))
+    }
+
+    func refreshWorkspaceProfile(force: Bool = false) async {
+        guard let scope = workspaceScope, var expectedToken = account?.token, workspaceProfileRequest == nil else { return }
+        let recentlyLoaded = workspaceProfileUpdated.map { Date().timeIntervalSince($0) < 60 } ?? false
+        guard force || (!workspaceNeedsLogin && !recentlyLoaded) else { return }
+        let request = UUID()
+        workspaceProfileRequest = request
+        workspaceProfileLoading = true
+        defer {
+            if workspaceProfileRequest == request {
+                workspaceProfileRequest = nil
+                workspaceProfileLoading = false
+            }
+        }
+        do {
+            try await renewWorkspaceSession()
+            try Task.checkCancellation()
+            guard workspaceProfileRequest == request, let api else { return }
+            expectedToken = api.token
+            let profile: WorkspaceProfile = try await api.request("/api/auth/me")
+            try Task.checkCancellation()
+            guard workspaceProfileRequest == request, account?.token == expectedToken else { return }
+            guard profile.username == scope.username else { throw ClipError("工作台应用清单与当前账号不匹配") }
+            acceptWorkspaceProfile(profile)
+        } catch {
+            guard !Task.isCancelled, !(error is CancellationError),
+                  (error as? URLError)?.code != .cancelled,
+                  workspaceProfileRequest == request, account?.token == expectedToken else { return }
+            if let failure = error as? HTTPFailure, [401, 403].contains(failure.status) {
+                workspaceProfile = nil
+                workspaceProfileUpdated = nil
+                workspaceNeedsLogin = true
+                if let key = workspaceProfileKey { defaults.removeObject(forKey: key) }
+                workspaceProfileFailure = "工作台账号需要重新登录。"
+            } else {
+                workspaceProfileFailure = workspaceProfile == nil ? "暂时无法载入工作台应用。" : "工作台连接不可用，正在显示上次的应用清单。"
+            }
+        }
     }
 
     private func resetClipboardContext() {
@@ -129,13 +218,15 @@ final class ClipStore: ObservableObject {
             let response = try await ClipAPI(base: base, transport: transport).login(username: username.trimmingCharacters(in: .whitespaces), password: password)
             let api = ClipAPI(base: base, token: response.access_token, transport: transport)
             do {
-                let _: WorkspaceProfile = try await api.request("/api/auth/me")
+                let profile: WorkspaceProfile = try await api.request("/api/auth/me")
                 guard stamp == generation else { throw CancellationError() }
+                guard profile.username == response.username else { throw ClipError("工作台应用清单与登录账号不匹配") }
                 let previous = self.api
                 let next = Account(base: base, token: response.access_token, username: response.username,
                     expires: response.expires_at, keyInfo: KeyInfo(configured: false), key: Data())
                 try Keychain.save(next)
                 account = next; generation = UUID()
+                acceptWorkspaceProfile(profile)
                 rows = []; beforeID = nil; latestID = 0; needsUnlock = false
                 succeeded = true
                 if let previous { try? await previous.logout() }
@@ -183,12 +274,14 @@ final class ClipStore: ObservableObject {
                 payload: .object(["username":.string(username),"password":.string(password),"invite":.string(invite),"client":.string("web"),"device":.string("iPhone · 工作台")]))
             let nextAPI = ClipAPI(base: base, token: response["access_token"].text, transport: transport)
             do {
-                let _: WorkspaceProfile = try await nextAPI.request("/api/auth/me")
+                let profile: WorkspaceProfile = try await nextAPI.request("/api/auth/me")
                 guard stamp == generation else { throw CancellationError() }
                 let next = Account(base: base, token: response["access_token"].text, username: response["username"].text,
                     expires: response["expires_at"].text, keyInfo: KeyInfo(configured: false), key: Data())
+                guard profile.username == next.username else { throw ClipError("工作台应用清单与登录账号不匹配") }
                 let previous = api
                 try Keychain.save(next); account = next; generation = UUID()
+                acceptWorkspaceProfile(profile)
                 rows = []; beforeID = nil; latestID = 0; needsUnlock = false
                 if let previous { try? await previous.logout() }
                 succeeded = true

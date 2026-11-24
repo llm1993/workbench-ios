@@ -45,18 +45,23 @@ struct ReaderHub: View {
     @StateObject private var client: NativeWeiduClient
     @State private var local = false
     @State private var tools = false
+    let localOnly: Bool
     let exit: () -> Void
-    init(store: ClipStore, exit: @escaping () -> Void) {
-        _client = StateObject(wrappedValue: NativeWeiduClient(store: store)); self.exit = exit
+    init(store: ClipStore, localOnly: Bool = false, exit: @escaping () -> Void) {
+        _client = StateObject(wrappedValue: NativeWeiduClient(store: store))
+        _local = State(initialValue: localOnly)
+        self.localOnly = localOnly
+        self.exit = exit
         #if DEBUG
         if PreviewTransport.module == .weidu { _local = State(initialValue: true) }
         #endif
     }
     var body: some View {
         Group {
-            if client.revoked {
+            if client.revoked && !local {
                 VStack(spacing: 20) {
                     ContentUnavailableView("未读权限不可用", systemImage: "lock", description: Text("请返回应用首页刷新权限。"))
+                    Button("打开本机阅读库") { local = true }.buttonStyle(.bordered)
                     Button("返回应用首页", action: exit).buttonStyle(.borderedProminent)
                 }
             }
@@ -67,9 +72,11 @@ struct ReaderHub: View {
     private var appActions: some View {
         Group {
             if !local { Button("订阅与阅读工具", systemImage: "slider.horizontal.3") { tools = true } }
-            Menu("阅读库", systemImage: "books.vertical") {
-                Button(local ? "同步阅读库" : "同步阅读库 ✓") { local = false }
-                Button(local ? "本机阅读库 ✓" : "本机阅读库") { local = true }
+            if !localOnly {
+                Menu("阅读库", systemImage: "books.vertical") {
+                    if !client.revoked { Button(local ? "同步阅读库" : "同步阅读库 ✓") { local = false } }
+                    Button(local ? "本机阅读库 ✓" : "本机阅读库") { local = true }
+                }
             }
             Button("返回应用首页", systemImage: "square.grid.2x2", action: exit)
             Divider()

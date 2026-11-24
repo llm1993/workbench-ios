@@ -8,6 +8,7 @@ import unittest
 
 source = (Path(__file__).resolve().parents[1] / 'Modules/WeiduKit/Data/Database.swift').read_text(encoding='utf-8')
 schema = re.search(r'private func migrate\(\).*?exec\("""(.*?)"""\)', source, re.S)[1]
+migrations = re.findall(r'addColumnIfMissing\("([^"]+)", table: "([^"]+)", declaration: "([^"]+)"\)', source)
 feed_sql, entry_sql = re.findall(r'try cloudWrite\("""(.*?)""",', source, re.S)
 
 
@@ -16,7 +17,8 @@ class ReaderCacheTests(unittest.TestCase):
         self.db = sqlite3.connect(':memory:')
         self.db.execute('PRAGMA foreign_keys=ON')
         self.db.executescript(schema)
-        self.db.execute('ALTER TABLE feeds ADD COLUMN auto_fulltext INTEGER NOT NULL DEFAULT 0')
+        for column, table, declaration in migrations:
+            self.db.execute(f'ALTER TABLE {table} ADD COLUMN {column} {declaration}')
         self.feed()
 
     def tearDown(self):
@@ -27,7 +29,7 @@ class ReaderCacheTests(unittest.TestCase):
 
     def entry(self, eid=9, body='', fulltext=None, detail=False, read=0, star=0, fid='1'):
         self.db.execute(entry_sql, (f'{eid:020d}', fid, str(eid), 'Article', 'https://fixture.invalid/article',
-            '', 'summary', body, fulltext, '', None, 1, read, star, int(detail), int(detail)))
+            '', 'summary', body, fulltext, '', None, 1, read, star, int(detail)))
 
     def body(self):
         return self.db.execute('SELECT content_html,fulltext_html,is_read,is_starred FROM entries').fetchone()
@@ -41,6 +43,14 @@ class ReaderCacheTests(unittest.TestCase):
         self.entry(body='old', fulltext='old full', detail=True)
         self.entry(body='new', detail=True)
         self.assertEqual(self.body(), ('new', None, 0, 0))
+
+    def test_cache_marker_distinguishes_an_empty_body_from_a_list_only_row(self):
+        self.entry()
+        self.assertEqual(self.db.execute('SELECT cloud_body_cached FROM entries').fetchone(), (0,))
+        self.entry(detail=True)
+        self.entry(read=1)
+        self.assertEqual(self.db.execute('SELECT cloud_body_cached FROM entries').fetchone(), (1,))
+        self.assertEqual(self.body(), ('', None, 1, 0))
 
     def test_padded_ids_keep_server_numeric_order_on_equal_dates(self):
         for eid in [9, 10, 100, 2]: self.entry(eid=eid)

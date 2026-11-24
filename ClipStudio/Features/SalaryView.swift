@@ -1,5 +1,4 @@
 import SwiftUI
-import CryptoKit
 
 private struct SalaryScrollOffset: PreferenceKey {
     static let defaultValue: CGFloat = 0
@@ -39,12 +38,11 @@ struct SalaryView: View {
     @State private var offerBResult: JSONValue = .null
     @State private var marginal: JSONValue = .null
     @State private var trap: JSONValue = .null
-    @State private var ownerScope: String?
+    @State private var ownerScope: WorkspaceScope?
     @State private var toast: String?
     @State private var share: RelayShare?
     @State private var scrolled = false
 
-    private var accountScope: String { (store.account?.base.absoluteString ?? "") + "|" + (store.account?.username ?? "") }
     private var presentation: SalaryPresentation {
         SalaryPresentation(result: result, tables: tables, month: month, withBonus: withBonus)
     }
@@ -406,12 +404,11 @@ struct SalaryView: View {
     // MARK: - 计算与本机草稿
 
     private var localURL: URL? {
-        guard ownerScope == accountScope, let account = store.account else { return nil }
-        let key = SHA256.hash(data: Data((account.base.absoluteString + "|" + account.username).utf8)).map { String(format: "%02x", $0) }.joined()
-        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?.appendingPathComponent("salary-\(key).json")
+        guard ownerScope == store.workspaceScope else { return nil }
+        return WorkspaceScope.draftURL("salary", scope: ownerScope)
     }
     private func initialize() async {
-        ownerScope = accountScope
+        ownerScope = store.workspaceScope
         do {
             let e = try SalaryEngine(); engine = e
             defaults = try e.call("defaults")

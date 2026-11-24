@@ -1,6 +1,5 @@
 import SwiftUI
 import JavaScriptCore
-import CryptoKit
 
 @MainActor
 final class MortgageEngine {
@@ -38,6 +37,10 @@ struct MortgageView: View {
     @State private var inputsExpanded = false
     @State private var drafts: JSONValue = .object([:])
     @State private var plans: [JSONValue] = []
+    @State private var showCloudPlans = false
+    @State private var plansLoading = false
+    @State private var plansFailure: String?
+    @State private var pendingPlan: JSONValue?
     @State private var selected: JSONValue = .null
     @State private var calculation: JSONValue = .null
     @State private var engine: MortgageEngine?
@@ -55,8 +58,10 @@ struct MortgageView: View {
     @State private var savedDraft: JSONValue = .null
     @State private var selections: JSONValue = .object([:])
     @State private var snapshots: JSONValue = .object([:])
-    @State private var ownerScope: String?
-    private var accountScope: String { (store.account?.base.absoluteString ?? "") + "|" + (store.account?.username ?? "") }
+    @State private var ownerScope: WorkspaceScope?
+    private var canUseCloud: Bool {
+        store.workspaceProfile?.apps.contains(where: { $0.key == "mortgage" }) == true
+    }
     private var draft: JSONValue { drafts[kind] }
     private var dirty: Bool { selected.isNull || draft != savedDraft }
     private var isPrepayment: Bool { scene == .prepayment }
@@ -107,8 +112,11 @@ struct MortgageView: View {
                     Button("完成") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
                 }
             }
-            .refreshable { do { try await reloadPlans() } catch is CancellationError { } catch { failure = error.localizedDescription } }
             .sheet(item: $form) { NativeForm($0).tint(MortgageStyle.accent) }
+            .sheet(isPresented: $showCloudPlans, onDismiss: {
+                switching = pendingPlan
+                pendingPlan = nil
+            }) { cloudPlansSheet }
             .sheet(item: $detailSheet) { sheet in
                 MortgageDetailSheet(sheet: sheet, presentation: presentation, initialContract: historyPart,
                                     selectMethod: { drafts["new"]["method"] = .string($0); recalculate(); saveLocal() },
@@ -136,7 +144,7 @@ struct MortgageView: View {
                 }
                 Button("取消", role: .cancel) { switching = nil }
             }
-            .task { await initialize() }
+            .task { initialize() }
             .task(id: draft) {
                 do { try await Task.sleep(for: .milliseconds(220)); try Task.checkCancellation(); recalculate(); saveLocal() }
                 catch { }
@@ -204,18 +212,42 @@ struct MortgageView: View {
     private var planMenu: some View {
         Menu {
             Section(selected.isNull ? "本机草稿" : selected["name"].text) {
-                Button("保存到云端", systemImage: "icloud.and.arrow.up") { beginSave(asNew: false) }
-                Button("另存为新方案", systemImage: "doc.badge.plus") { beginSave(asNew: true) }
-            }
-            Section("\(kind == "new" ? "试算" : "我的房贷")方案") {
                 Button("新建草稿", systemImage: "plus") { switching = .null }
-                ForEach(plans.filter { $0["kind"].text == kind }, id: \.selfKey) { plan in
-                    Button(plan["name"].text) { switching = plan }
+            }
+            if canUseCloud {
+                Section("云端方案") {
+                    Button("打开云端方案", systemImage: "icloud.and.arrow.down") { showCloudPlans = true }
+                    Button("保存到云端", systemImage: "icloud.and.arrow.up") { beginSave(asNew: false) }
+                    Button("另存为新方案", systemImage: "doc.badge.plus") { beginSave(asNew: true) }
+                    if !selected.isNull { Button("删除云端方案", role: .destructive) { deleting = true } }
                 }
             }
-            if !selected.isNull { Button("删除云端方案", role: .destructive) { deleting = true } }
         } label: { Label("方案", systemImage: "folder") }
             .accessibilityIdentifier("mortgage-plans")
+    }
+    private var cloudPlansSheet: some View {
+        NavigationStack {
+            List {
+                let available = plans.filter { $0["kind"].text == kind }
+                if plansLoading { ProgressView("正在加载云端方案…") }
+                if let plansFailure {
+                    NativeFailure(message: plansFailure)
+                    Button("重试") { Task { await reloadPlans() } }
+                } else if !plansLoading && available.isEmpty {
+                    Text("暂无\(kind == "new" ? "试算" : "我的房贷")云端方案").foregroundStyle(.secondary)
+                }
+                ForEach(available, id: \.selfKey) { plan in
+                    Button(plan["name"].text) {
+                        pendingPlan = plan
+                        showCloudPlans = false
+                    }
+                }
+            }
+            .navigationTitle("云端方案").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { showCloudPlans = false } } }
+            .task { await reloadPlans() }
+            .refreshable { await reloadPlans() }
+        }
     }
     private var inputsCard: some View {
         MortgagePanel {
@@ -244,12 +276,14 @@ struct MortgageView: View {
                 if isPrepayment { prepaymentInputs }
                 else if kind == "new" { MortgageTrialInputs(draft: binding(kind), compare: { detailSheet = .methods }) }
                 else { currentInputs }
-                Button { beginSave(asNew: false) } label: {
-                    Label("保存到云端", systemImage: "icloud.and.arrow.up").font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 48)
-                        .background(MortgageStyle.hero, in: RoundedRectangle(cornerRadius: 15))
-                }.buttonStyle(.plain).accessibilityIdentifier("mortgage-save")
-                Text("修改即计算，本机草稿与云端方案分开保存。")
+                if canUseCloud {
+                    Button { beginSave(asNew: false) } label: {
+                        Label("保存到云端", systemImage: "icloud.and.arrow.up").font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 48)
+                            .background(MortgageStyle.hero, in: RoundedRectangle(cornerRadius: 15))
+                    }.buttonStyle(.plain).accessibilityIdentifier("mortgage-save")
+                }
+                Text("修改后自动计算并保存本机草稿。")
                     .font(.caption).foregroundStyle(MortgageStyle.secondary)
             }
         }
@@ -424,19 +458,18 @@ struct MortgageView: View {
     private func binding(_ key: String) -> Binding<JSONValue> { Binding(get: { drafts[key] }, set: { drafts[key] = $0 }) }
     private func partBinding(_ i: Int) -> Binding<JSONValue> { Binding(get: { drafts[kind]["parts"][i] }, set: { drafts[kind]["parts"][i] = $0 }) }
     private var localURL: URL? {
-        guard ownerScope == accountScope, let account = store.account else { return nil }
-        let key = SHA256.hash(data: Data((account.base.absoluteString + "|" + account.username).utf8)).map { String(format: "%02x", $0) }.joined()
-        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?.appendingPathComponent("mortgage-\(key).json")
+        guard ownerScope == store.workspaceScope else { return nil }
+        return WorkspaceScope.draftURL("mortgage", scope: ownerScope)
     }
-    private func initialize() async {
-        ownerScope = accountScope
+    private func initialize() {
+        ownerScope = store.workspaceScope
         do {
             let e = try MortgageEngine(); engine = e; drafts = try e.call("defaults")
             if let url = localURL, let data = try? Data(contentsOf: url), let saved = try? JSONDecoder().decode(JSONValue.self, from: data) {
                 if saved["drafts"].isNull { drafts = saved }
                 else { drafts = saved["drafts"]; selections = saved["selected"]; snapshots = saved["saved"]; selected = selections[kind]; savedDraft = snapshots[kind] }
             }
-            recalculate(); try await reloadPlans()
+            recalculate()
         } catch { failure = error.localizedDescription }
     }
     private func recalculate() {
@@ -449,13 +482,13 @@ struct MortgageView: View {
         }
     }
     private func saveLocal() {
-        guard let url = localURL else { return }
+        guard let url = localURL, !drafts.object.isEmpty else { return }
         do {
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             selections[kind] = selected; snapshots[kind] = savedDraft
             let value: JSONValue = .object(["drafts": drafts, "selected": selections, "saved": snapshots])
             try JSONEncoder().encode(value).write(to: url, options: [.atomic, .completeFileProtection])
-        } catch { failure = "本机草稿保存失败，请先保存到云端再离开。" }
+        } catch { failure = "本机草稿保存失败，请重试。" }
     }
     private func choose(_ plan: JSONValue) {
         selected = plan; savedDraft = plan["data"]
@@ -463,16 +496,29 @@ struct MortgageView: View {
         else if let engine, let defaults = try? engine.call("defaults") { drafts[kind] = defaults[kind] }
         recalculate(); saveLocal()
     }
-    private func reloadPlans() async throws {
-        guard let api = store.api else { return }
-        let scope = accountScope
-        let result = try await api.document("/api/mortgage/plans")
-        guard scope == accountScope, ownerScope == scope else { throw CancellationError() }
-        plans = result["items"].array
+    private func reloadPlans() async {
+        guard !plansLoading else { return }
+        guard canUseCloud, let api = store.api, ownerScope == store.workspaceScope else {
+            plansFailure = "请登录有房贷权限的工作台账号。"
+            return
+        }
+        let scope = store.workspaceScope
+        plansLoading = true; plansFailure = nil
+        defer { plansLoading = false }
+        do {
+            let result = try await api.document("/api/mortgage/plans")
+            try Task.checkCancellation()
+            guard scope == store.workspaceScope else { return }
+            plans = result["items"].array
+        } catch {
+            guard !Task.isCancelled, scope == store.workspaceScope else { return }
+            if let response = error as? HTTPFailure, [401, 403].contains(response.status) { plans = [] }
+            plansFailure = error.localizedDescription
+        }
     }
     private func save(base: String? = nil) async {
-        guard !busy, let api = store.api else { return }; busy = true; defer { busy = false }
-        let scope = accountScope, submitted = draft
+        guard !busy, canUseCloud, let api = store.api, ownerScope == store.workspaceScope else { return }; busy = true; defer { busy = false }
+        let scope = store.workspaceScope, submitted = draft
         do {
             let title = name.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !title.isEmpty, title.unicodeScalars.count <= 40 else { throw ClipError("方案名称应为 1–40 字") }
@@ -483,20 +529,23 @@ struct MortgageView: View {
                 payload["base"] = .string(base ?? selected["updated_at"].text)
                 next = try await api.document("/api/mortgage/plans/\(selected["id"].int)", method: "PUT", payload: payload)
             } else { payload["kind"] = .string(kind); next = try await api.document("/api/mortgage/plans", method: "POST", payload: payload) }
-            guard scope == accountScope, ownerScope == scope else { throw CancellationError() }
-            selected = next; savedDraft = submitted; saveLocal(); try await reloadPlans(); failure = nil
+            guard scope == store.workspaceScope, ownerScope == scope else { return }
+            plans.removeAll { $0["id"] == next["id"] }
+            plans.insert(next, at: 0)
+            selected = next; savedDraft = submitted; failure = nil; saveLocal()
         } catch let e as HTTPFailure where e.status == 409 {
             if let data = e.payload, let value = try? JSONDecoder().decode(JSONValue.self, from: data), !value["current"].isNull { conflict = value["current"] }
             else { failure = e.localizedDescription }
         } catch { failure = error.localizedDescription }
     }
     private func remove() async {
-        guard !busy, let api = store.api, !selected.isNull else { return }; busy = true; defer { busy = false }
-        let scope = accountScope
+        guard !busy, canUseCloud, let api = store.api, ownerScope == store.workspaceScope, !selected.isNull else { return }; busy = true; defer { busy = false }
+        let scope = store.workspaceScope, id = selected["id"]
         do {
-            _ = try await api.document("/api/mortgage/plans/\(selected["id"].int)", method: "DELETE")
-            guard scope == accountScope, ownerScope == scope else { throw CancellationError() }
-            selected = .null; savedDraft = .null; saveLocal(); try await reloadPlans()
+            _ = try await api.document("/api/mortgage/plans/\(id.int)", method: "DELETE")
+            guard scope == store.workspaceScope, ownerScope == scope else { return }
+            plans.removeAll { $0["id"] == id }
+            selected = .null; savedDraft = .null; failure = nil; saveLocal()
         } catch { failure = error.localizedDescription }
     }
 }

@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 struct LANTransferView: View {
     @ObservedObject var model: LANTransferStore
-    let useCloud: (String?) -> Void
+    let useCloud: ((String?) -> Void)?
     @State private var choosing = false
     @State private var selectedFiles: [URL] = []
     @State private var selectionContext: UUID?
@@ -43,12 +43,14 @@ struct LANTransferView: View {
                 pendingSection
                 recordsSection
                 localSettings
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("另一台设备不在线？").font(.headline)
-                    Text("云端中转可以让其他设备稍后下载。只有你明确选择中转时，文件才会上传服务器。")
-                        .font(.callout).foregroundStyle(Theme.text2)
-                    Button("打开云端中转") { useCloud(nil) }.frame(minHeight: 44).accessibilityIdentifier("lan-open-cloud")
-                }.padding(.top, 8)
+                if let useCloud {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("另一台设备不在线？").font(.headline)
+                        Text("云端中转可以让其他设备稍后下载。只有你明确选择中转时，文件才会上传服务器。")
+                            .font(.callout).foregroundStyle(Theme.text2)
+                        Button("打开云端中转") { useCloud(nil) }.frame(minHeight: 44).accessibilityIdentifier("lan-open-cloud")
+                    }.padding(.top, 8)
+                }
             }.padding(20)
         }.background(AmbientBackground()).accessibilityIdentifier("lan-scroll")
             .fileImporter(isPresented: $choosing, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
@@ -74,7 +76,7 @@ struct LANTransferView: View {
                 Button("取消", role: .cancel) { pairing = nil }
             } message: { Text("此设备已通过当前账号加密密钥验证。首次连接仍需在电脑上允许配对；设备身份改变时会重新确认。") }
             .confirmationDialog("改用云端中转？", isPresented: Binding(get: { cloudRecord != nil }, set: { if !$0 { cloudRecord = nil } }), titleVisibility: .visible) {
-                if let record = cloudRecord {
+                if let record = cloudRecord, let useCloud {
                     Button("加密上传到云端中转") {
                         guard cloudContext == model.contextID else { cloudRecord = nil; return }
                         do { let fid = try model.cloudFallback(record.id); cloudRecord = nil; useCloud(fid) }
@@ -256,7 +258,9 @@ struct LANTransferView: View {
             } else if record.state.resumable {
                 Button("继续局域网传输") { if context == model.contextID { model.resume(record.id) } }.frame(minHeight: 44).disabled(model.busy)
                 if record.direction == .sending {
-                    Button("改用云端中转") { if context == model.contextID { cloudContext = context; cloudRecord = record } }.frame(minHeight: 44).disabled(model.busy)
+                    if useCloud != nil {
+                        Button("改用云端中转") { if context == model.contextID { cloudContext = context; cloudRecord = record } }.frame(minHeight: 44).disabled(model.busy)
+                    }
                 } else {
                     Button("拒绝接收", role: .destructive) { if context == model.contextID { model.decline(record.id) } }.frame(minHeight: 44).disabled(model.busy)
                 }

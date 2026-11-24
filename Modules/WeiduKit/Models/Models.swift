@@ -52,6 +52,7 @@ struct Entry: Identifiable, Equatable {
     var isStarred: Bool
     var opened: Bool
     var sortTime: Double
+    var hasCachedCloudBody = false
 
     var date: Date { publishedAt ?? fetchedAt }
     var displayTitle: String { title.isEmpty ? "无标题" : title }

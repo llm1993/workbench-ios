@@ -9,7 +9,9 @@ struct ModuleScene: View {
         Group {
             switch app {
             case .weidu: ReaderHub(store: store, exit: exit)
+            case .localReader: ReaderHub(store: store, localOnly: true, exit: exit)
             case .clip: RootView(exitToWorkspace: exit, initialAction: clipboardAction)
+            case .lan: navigation { LANTransferView(model: store.lanTransfers, useCloud: nil).navigationTitle("局域网直传") }
             case .youshu: navigation { AssetsView() }
             case .stock: navigation { StockView() }
             case .mortgage: navigation { MortgageView() }

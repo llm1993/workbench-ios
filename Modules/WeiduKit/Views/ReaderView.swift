@@ -293,6 +293,10 @@ struct ReaderView: View {
             Menu {
                 if store.workspace != nil {
                     Button { showWorkspaceTools = true } label: { Label("AI 解读与文章操作", systemImage: "sparkles") }
+                    Button { Task { await store.refreshReaderBody() } } label: {
+                        Label("刷新正文", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(store.readerLoadingBody || store.readerLoadingFulltext || store.isClearingCaches)
                     Divider()
                 }
                 if let url = URL(string: entry.url), !entry.url.isEmpty {

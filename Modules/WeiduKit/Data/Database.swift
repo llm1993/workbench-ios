@@ -150,14 +150,18 @@ final class Database {
         CREATE INDEX IF NOT EXISTS idx_entries_star ON entries(is_starred, published_at DESC);
         PRAGMA user_version=1;
         """)
-        if let columns = prepare("PRAGMA table_info(feeds)") {
-            var hasAutoFulltext = false
-            while sqlite3_step(columns) == SQLITE_ROW {
-                if text(columns, 1) == "auto_fulltext" { hasAutoFulltext = true }
-            }
-            sqlite3_finalize(columns)
-            if !hasAutoFulltext { exec("ALTER TABLE feeds ADD COLUMN auto_fulltext INTEGER NOT NULL DEFAULT 0;") }
+        addColumnIfMissing("auto_fulltext", table: "feeds", declaration: "INTEGER NOT NULL DEFAULT 0")
+        addColumnIfMissing("cloud_body_cached", table: "entries", declaration: "INTEGER NOT NULL DEFAULT 0")
+    }
+
+    private func addColumnIfMissing(_ column: String, table: String, declaration: String) {
+        guard let columns = prepare("PRAGMA table_info(\(table))") else { return }
+        var exists = false
+        while sqlite3_step(columns) == SQLITE_ROW {
+            if text(columns, 1) == column { exists = true; break }
         }
+        sqlite3_finalize(columns)
+        if !exists { exec("ALTER TABLE \(table) ADD COLUMN \(column) \(declaration);") }
     }
 
     // MARK: - 订阅
@@ -366,7 +370,7 @@ final class Database {
     }
 
     func entry(id: String) -> Entry? {
-        let sql = "SELECT \(Database.listColumns),e.content_html,e.fulltext_html FROM entries e JOIN feeds f ON f.id=e.feed_id WHERE e.id=? LIMIT 1"
+        let sql = "SELECT \(Database.listColumns),e.content_html,e.fulltext_html,e.cloud_body_cached FROM entries e JOIN feeds f ON f.id=e.feed_id WHERE e.id=? LIMIT 1"
         guard let stmt = prepare(sql) else { return nil }
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, id)
@@ -374,6 +378,8 @@ final class Database {
         var entry = makeEntry(stmt)
         entry.contentHTML = text(stmt, 14)
         entry.fulltextHTML = optionalText(stmt, 15)
+        // Older caches already contain HTML but have no detail-fetch marker.
+        entry.hasCachedCloudBody = int(stmt, 16) != 0 || !entry.contentHTML.isEmpty || entry.hasFulltext
         return entry
     }
 
@@ -600,7 +606,8 @@ extension Database {
         } catch { try? cloudWrite("ROLLBACK"); throw error }
     }
 
-    static func cloudID(_ item: CloudValue) -> String { String(format: "%020lld", Int64(item["id"].int)) }
+    static func cloudID(_ item: CloudValue) -> String { cloudID(item["id"].int) }
+    static func cloudID(_ id: Int) -> String { String(format: "%020lld", Int64(id)) }
 
     func mergeCloudList(_ items: [CloudValue], pending: [String: CloudValue], preserveState: Bool) throws -> [String] {
         guard !items.isEmpty else { return [] }
@@ -624,17 +631,19 @@ extension Database {
         let fulltext: SQLArg = item["has_fulltext"].flag && body != .null ? .text(body.text) : .null
         let read = state["read"] ?? .null, starred = state["starred"] ?? .null
         try cloudWrite("""
-        INSERT INTO entries(id,feed_id,guid,title,url,author,summary,content_html,fulltext_html,image_url,published_at,fetched_at,is_read,is_starred)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET feed_id=excluded.feed_id,title=excluded.title,url=excluded.url,
-        author=excluded.author,summary=excluded.summary,content_html=CASE WHEN ? THEN excluded.content_html ELSE entries.content_html END,
-        fulltext_html=CASE WHEN ? THEN excluded.fulltext_html ELSE entries.fulltext_html END,image_url=excluded.image_url,
+        INSERT INTO entries(id,feed_id,guid,title,url,author,summary,content_html,fulltext_html,image_url,published_at,fetched_at,is_read,is_starred,cloud_body_cached)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET feed_id=excluded.feed_id,title=excluded.title,url=excluded.url,
+        author=excluded.author,summary=excluded.summary,
+        content_html=CASE WHEN excluded.cloud_body_cached THEN excluded.content_html ELSE entries.content_html END,
+        fulltext_html=CASE WHEN excluded.cloud_body_cached THEN excluded.fulltext_html ELSE entries.fulltext_html END,
+        cloud_body_cached=MAX(entries.cloud_body_cached,excluded.cloud_body_cached),image_url=excluded.image_url,
         published_at=excluded.published_at,fetched_at=excluded.fetched_at,is_read=excluded.is_read,is_starred=excluded.is_starred
         """, [.text(id),.text(item["feed_id"].text),.text(item["guid"].text.isEmpty ? item["id"].text : item["guid"].text),
         .text(item["title"].text),.text(item["url"].text),.text(item["author"].text),.text(item["summary"].text),.text(source.text),fulltext,
         .text(item["image_url"].text),item["published_at"].date.map { .double($0.timeIntervalSince1970) } ?? .null,
         .double(item["fetched_at"].date?.timeIntervalSince1970 ?? Date().timeIntervalSince1970),
         .int((read == .null ? item["is_read"].flag : read.flag) ? 1 : 0),
-        .int((starred == .null ? item["is_starred"].flag : starred.flag) ? 1 : 0),.int(body == .null ? 0 : 1),.int(body == .null ? 0 : 1)])
+        .int((starred == .null ? item["is_starred"].flag : starred.flag) ? 1 : 0),.int(body == .null ? 0 : 1)])
         return id
     }
 }

@@ -4,30 +4,29 @@ struct WorkspaceSettingsView: View {
     @EnvironmentObject private var store: ClipStore
     @Environment(\.dismiss) private var dismiss
     @AppStorage("appearance") private var appearance = "system"
-    @State private var profile: JSONValue = .null
-    @State private var failure: String?
     @State private var login = false
     @State private var logout = false
     var body: some View {
         NavigationStack {
             Form {
-                if let failure { NativeFailure(message:failure) }
                 Section("工作台账号") {
                     LabeledContent("账号",value:store.account?.username ?? "未登录")
-                    LabeledContent("工作台",value:store.account?.base.host ?? "")
-                    Button("重新登录 / 切换账号"){login=true}
-                    NavigationLink("修改密码"){PasswordView()}
-                    NavigationLink("登录设备"){SessionDevicesView()}
-                    NavigationLink("门厅应用排序与显隐"){HomeLayoutView()}
+                    Button(store.account == nil ? "登录工作台" : "重新登录 / 切换账号"){login=true}
+                    if let account = store.account, !store.workspaceNeedsLogin {
+                        LabeledContent("工作台",value:account.base.host ?? "")
+                        NavigationLink("修改密码"){PasswordView()}
+                        NavigationLink("登录设备"){SessionDevicesView()}
+                        NavigationLink("门厅应用排序与显隐"){HomeLayoutView()}
+                    }
                 }
                 Section("外观") {
                     Picker("显示模式",selection:$appearance){Text("跟随系统").tag("system");Text("浅色").tag("light");Text("深色").tag("dark")}
                 }
-                Section("推送") {NavigationLink("Bark 推送配置"){BarkSettingsView()}}
-                if profile["apps"].array.contains(where: { $0["key"].text == "clip" }) {
+                if store.workspaceProfile?.apps.contains(where: { $0.key == "clip" }) == true {
+                    Section("推送") {NavigationLink("Bark 推送配置"){BarkSettingsView()}}
                     Section("剪贴板") { NavigationLink("加密与历史管理") { ClipSecurityView() } }
                 }
-                if profile["is_admin"].flag {
+                if store.workspaceProfile?.is_admin == true {
                     Section("管理") {
                         NavigationLink("邀请"){InvitesView()}
                         NavigationLink("用户与应用权限"){UsersView()}
@@ -36,10 +35,12 @@ struct WorkspaceSettingsView: View {
                 }
                 Section("关于") {
                     LabeledContent("版本",value:Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
-                    Text("未读默认同步工作台账号，也可切换到独立的本机阅读库；各云端模块使用当前工作台账号。")
+                    Text("本机阅读库、房贷试算和到手工资无需连接工作台。")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                Section {Button("退出登录",role:.destructive){logout=true}.disabled(store.busy)}
+                if store.account != nil {
+                    Section {Button("退出登录",role:.destructive){logout=true}.disabled(store.busy)}
+                }
             }.navigationTitle("账户与设置").navigationBarTitleDisplayMode(.inline)
                 .toolbar{ToolbarItem(placement:.confirmationAction){Button("完成"){dismiss()}}}
                 .sheet(isPresented:$login){NavigationStack{LoginView()}.environmentObject(store)}
@@ -47,11 +48,6 @@ struct WorkspaceSettingsView: View {
                 .confirmationDialog("退出会清除本机令牌与剪贴板密钥，保留云端数据及未读本机阅读库。",isPresented:$logout,titleVisibility:.visible){
                     Button("退出并撤销会话",role:.destructive){Task{await store.logout();if store.account == nil{dismiss()}}}
                     Button("仅退出本机",role:.destructive){Task{await store.logout(localOnly:true);if store.account == nil{dismiss()}}}
-                }
-                .task(id:(store.account?.base.absoluteString ?? "")+(store.account?.username ?? "")) {
-                    profile = .null
-                    do { if let api=store.api { let next=try await api.document("/api/auth/me");try Task.checkCancellation();profile=next } }
-                    catch is CancellationError{} catch{failure=error.localizedDescription}
                 }
                 .onChange(of:store.account?.username){old,name in if name != old{dismiss()}}
         }
@@ -121,35 +117,37 @@ struct HomeLayoutView:View{
     @State private var busy=false
     @State private var loading=false
     @State private var loaded=false
-    private var accountIdentity: String { (store.account?.base.absoluteString ?? "") + "|" + (store.account?.username ?? "") }
+    private var accountIdentity: WorkspaceScope? { store.workspaceScope }
     var body:some View{
         List{
             Section{
                 ForEach($layout.apps){$app in
                     Toggle(app.name,isOn:$app.isVisible).accessibilityIdentifier("layout-" + app.key)
                 }.onMove{from,to in layout.apps.move(fromOffsets:from,toOffset:to)}
-            }footer:{Text("拖动调整顺序。隐藏只影响首页，不会撤销使用权限。")}
+            }footer:{Text("拖动调整工作台应用的顺序。首页的本机工具始终可用。")}
             if loading { ProgressView("正在加载应用…") }
             if let failure{Text(failure).foregroundStyle(.red);Button("重试"){Task{if loaded{await save()}else{await load()}}}}
             Button(busy ? "保存中…" : "保存布局"){Task{await save()}}.disabled(!loaded)
         }.disabled(busy || loading).navigationTitle("门厅").toolbar{EditButton()}.task(id:accountIdentity){await load()}
     }
     private func load()async{
-        guard let api=store.api else{return}
         let identity=accountIdentity;loading=true;loaded=false;defer{loading=false}
-        do{
-            let profile:WorkspaceProfile=try await api.request("/api/auth/me")
-            try Task.checkCancellation();guard identity==accountIdentity else{return}
-            layout=WorkspaceAppLayout(apps:profile.apps);loaded=true;failure=nil
-        }catch is CancellationError{}catch{if identity==accountIdentity{failure=error.localizedDescription}}
+        if store.workspaceProfile == nil { await store.refreshWorkspaceProfile(force: true) }
+        guard !Task.isCancelled, identity == accountIdentity else{return}
+        guard let profile=store.workspaceProfile else {
+            failure=store.workspaceProfileFailure ?? "应用清单尚未载入，请重试。"
+            return
+        }
+        layout=WorkspaceAppLayout(apps:profile.apps);loaded=true;failure=nil
     }
     private func save()async{
         guard !busy,loaded,let api=store.api else{return};busy=true;defer{busy=false}
         let identity=accountIdentity
         do{
             let response:WorkspaceAppLayout=try await api.request("/api/auth/apps",method:"PUT",body:JSONEncoder().encode(layout.payload))
-            try Task.checkCancellation();guard identity==accountIdentity else{return}
+            try Task.checkCancellation();guard identity==accountIdentity,store.api?.token==api.token else{return}
             layout=response;failure=nil
+            store.acceptWorkspaceLayout(response)
         }catch is CancellationError{}catch{if identity==accountIdentity{failure=error.localizedDescription}}
     }
 }
