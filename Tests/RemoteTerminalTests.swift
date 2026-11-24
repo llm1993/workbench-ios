@@ -1,5 +1,6 @@
 import XCTest
 import SwiftTerm
+import SwiftUI
 import UIKit
 @testable import ClipStudio
 
@@ -38,6 +39,47 @@ final class RemoteTerminalTests: XCTestCase {
         view.controlModifier = true
         view.insertText("c")
         XCTAssertEqual(input.packets, [Data("中".utf8), Data([13]), Data([3])])
+    }
+
+    @MainActor
+    func testMountedTerminalGainsKeyboardFocusAfterInputIsEnabled() async throws {
+        let terminal = RemoteTerminal()
+        let keyboard = TerminalKeyboard()
+        let screen = TerminalScreen(terminal: terminal, keyboard: keyboard, inputEnabled: false)
+        let hosting = UIHostingController(rootView: screen)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let previousWindow = scene.keyWindow
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = hosting
+        window.makeKeyAndVisible()
+        defer {
+            keyboard.hide()
+            window.isHidden = true
+            previousWindow?.makeKey()
+        }
+        try await waitFor { keyboard.view != nil }
+        let display = try XCTUnwrap(keyboard.view)
+        XCTAssertFalse(display.canBecomeFirstResponder)
+
+        // The coordinator and UIKit display remain mounted when input becomes available.
+        hosting.rootView = TerminalScreen(terminal: terminal, keyboard: keyboard, inputEnabled: true)
+        try await waitFor { display.canBecomeFirstResponder }
+        XCTAssertTrue(keyboard.view === display)
+        keyboard.toggle()
+        XCTAssertTrue(display.isFirstResponder)
+
+        hosting.rootView = screen
+        try await waitFor { !display.canBecomeFirstResponder && !display.isFirstResponder }
+    }
+
+    @MainActor
+    private func waitFor(_ condition: () -> Bool) async throws {
+        for _ in 0..<100 {
+            if condition() { return }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        XCTFail("Terminal view did not update its keyboard focus state.")
+        throw URLError(.timedOut)
     }
 
     private func code(lan: String, tailscale: String) throws -> String {

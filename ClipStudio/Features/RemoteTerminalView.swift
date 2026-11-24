@@ -21,7 +21,7 @@ struct RemoteTerminalView: View {
         VStack(spacing: 0) {
             header
             ZStack {
-                TerminalScreen(terminal: terminal, keyboard: keyboard)
+                TerminalScreen(terminal: terminal, keyboard: keyboard, inputEnabled: terminal.canSend)
                     .accessibilityIdentifier("claude-terminal-screen")
                 if terminal.state == .unpaired {
                     VStack(spacing: 12) {
@@ -163,7 +163,7 @@ struct RemoteTerminalView: View {
 }
 
 @MainActor
-private final class TerminalKeyboard {
+final class TerminalKeyboard {
     enum Key { case escape, interrupt, up, down, left, right, tab }
     weak var view: TerminalDisplay?
 
@@ -240,14 +240,16 @@ final class TerminalDisplay: TerminalView {
     override var canBecomeFirstResponder: Bool { acceptsInput && super.canBecomeFirstResponder }
 }
 
-private struct TerminalScreen: UIViewRepresentable {
+struct TerminalScreen: UIViewRepresentable {
     let terminal: RemoteTerminal
     let keyboard: TerminalKeyboard
+    let inputEnabled: Bool
 
     func makeCoordinator() -> Coordinator { Coordinator(terminal: terminal) }
 
     func makeUIView(context: Context) -> TerminalDisplay {
         let view = TerminalDisplay(frame: .zero, font: .monospacedSystemFont(ofSize: 13, weight: .regular))
+        view.acceptsInput = inputEnabled
         view.terminalDelegate = context.coordinator
         view.inputAccessoryView = keyboard.accessory(transport: terminal)
         view.keyboardAppearance = .dark
@@ -260,9 +262,9 @@ private struct TerminalScreen: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: TerminalDisplay, context: Context) {
-        if uiView.acceptsInput != terminal.canSend {
-            uiView.acceptsInput = terminal.canSend
-            if !terminal.canSend && uiView.isFirstResponder { uiView.resignFirstResponder() }
+        if uiView.acceptsInput != inputEnabled {
+            uiView.acceptsInput = inputEnabled
+            if !inputEnabled && uiView.isFirstResponder { uiView.resignFirstResponder() }
         }
     }
 
