@@ -12,6 +12,9 @@ packages:
   SwiftSoup:
     url: https://github.com/scinfu/SwiftSoup.git
     from: 2.7.0
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm.git
+    revision: 8e7a1e154f470e19c709a00a8768df348ba5fc43
 
 targets:
   WeiduKit:
@@ -41,7 +44,7 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
-        NSLocalNetworkUsageDescription: 用于发现同一局域网中的电脑并加密直传文件，直传文件不上传服务器。
+        NSLocalNetworkUsageDescription: 用于连接局域网内的电脑，进行加密文件直传或访问已配对的 Claude 终端。
         NSBonjourServices: ["_workbench._tcp"]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIApplicationSceneManifest:
@@ -61,6 +64,8 @@ targets:
     dependencies:
       - target: WeiduKit
         embed: true
+      - package: SwiftTerm
+        product: SwiftTerm
   ClipStudioTests:
     type: bundle.unit-test
     platform: iOS

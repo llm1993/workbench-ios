@@ -14,6 +14,7 @@
 - 房贷与到手工资使用随 App 打包的计算资源。未登录草稿与各账号草稿各自保存。房贷只在用户打开云端方案或执行云端保存、删除时连接工作台。
 - 工资参数、草稿和方案保存在本机，导出通过系统分享面板完成。见[到手工资界面与验证边界](docs/salary-ui.md)。
 - 未读是独立的原生框架模块，保留阅读、缓存、媒体、全文和离线状态处理。
+- 「Claude 终端」连接 Windows 上的终端主机，首次使用需要配对。局域网优先，外网通过 Tailscale 访问。重连后接回 Windows 上同一个会话，工作台后端无需参与。主机脚本和安装步骤位于工作区的 `workbench/windows/remote_terminal/`。
 
 项目与 scheme 仍名为 `ClipStudio`，公开版本采用中性 Bundle ID `com.example.workbench`，阅读框架标识为 `com.example.workbench.reader`，Keychain service 与应用标识一致。此版本按独立新 App 安装，不覆盖旧 App，也不会自动继承旧 App 的沙盒和 Keychain；原 App 可以继续保留。云端账号数据和剪贴板加密协议不因更换本机安装身份而删除或改变。
 

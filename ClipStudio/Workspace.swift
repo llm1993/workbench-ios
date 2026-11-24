@@ -21,6 +21,7 @@ struct WorkspaceModule: Codable, Identifiable {
         case "salary": return "yensign.circle"
         case "localReader": return "text.book.closed"
         case "lan": return "arrow.left.arrow.right"
+        case "terminal": return "terminal"
         default: return "square.grid.2x2"
         }
     }
@@ -41,7 +42,7 @@ struct WorkspaceAppLayout: Decodable {
 }
 
 enum WorkspaceApp: String, Identifiable, CaseIterable {
-    case youshu, weidu, clip, stock, mortgage, salary, localReader, lan
+    case youshu, weidu, clip, stock, mortgage, salary, localReader, lan, terminal
     var id: String { rawValue }
 }
 
@@ -88,6 +89,7 @@ struct WorkspaceView: View {
         if let account = store.account, account.key.count == 32, account.keyInfo.key_id != nil, !store.needsUnlock {
             modules.append(WorkspaceModule(key: "lan", name: "局域网直传", desc: "与同一局域网内的电脑加密互传", hidden: false))
         }
+        modules.append(WorkspaceModule(key: "terminal", name: "Claude 终端", desc: "连接 Windows · 局域网和 Tailscale", hidden: false))
         return modules
     }
     var body: some View {

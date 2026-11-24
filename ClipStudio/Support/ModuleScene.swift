@@ -12,6 +12,7 @@ struct ModuleScene: View {
             case .localReader: ReaderHub(store: store, localOnly: true, exit: exit)
             case .clip: RootView(exitToWorkspace: exit, initialAction: clipboardAction)
             case .lan: navigation { LANTransferView(model: store.lanTransfers, useCloud: nil).navigationTitle("局域网直传") }
+            case .terminal: RemoteTerminalView(exit: exit)
             case .youshu: navigation { AssetsView() }
             case .stock: navigation { StockView() }
             case .mortgage: navigation { MortgageView() }
