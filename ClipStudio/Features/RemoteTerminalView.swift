@@ -12,8 +12,6 @@ struct RemoteTerminalView: View {
     @State private var code = ""
     @State private var pairError: String?
     @State private var confirmForget = false
-    @State private var input = ""
-    @FocusState private var composing: Bool
 
     private let surface = Color(hex: 0x141A16)
     private let chrome = Color(hex: 0x1C231E)
@@ -38,7 +36,6 @@ struct RemoteTerminalView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             statusBar
-            composer
         }
         .background(chrome.ignoresSafeArea())
         .preferredColorScheme(.dark)
@@ -60,7 +57,17 @@ struct RemoteTerminalView: View {
             Text("Claude CLI").font(.headline).lineLimit(1)
             Spacer(minLength: 0)
             Button {
-                composing = false
+                keyboard.toggle()
+            } label: {
+                Image(systemName: "keyboard").frame(width: 44, height: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(accent)
+            .disabled(!terminal.canSend)
+            .accessibilityLabel("显示或收起终端键盘")
+            .accessibilityIdentifier("claude-terminal-keyboard")
+            Button {
+                keyboard.hide()
                 showPairing = true
             } label: {
                 HStack(spacing: 5) {
@@ -101,53 +108,6 @@ struct RemoteTerminalView: View {
         .padding(.horizontal, 12).padding(.vertical, action == nil ? 7 : 0)
         .background(chrome)
         .overlay(alignment: .top) { Divider() }
-    }
-
-    private var composer: some View {
-        HStack(spacing: 3) {
-            key("Esc", .escape, label: "Esc 取消")
-            key("^C", .interrupt, label: "Ctrl+C 中断")
-            Menu {
-                key("↑ 上", .up, label: "向上")
-                key("↓ 下", .down, label: "向下")
-                key("← 左", .left, label: "向左")
-                key("→ 右", .right, label: "向右")
-                key("Tab", .tab, label: "Tab")
-                key("⌫ 退格", .backspace, label: "退格")
-            } label: {
-                Image(systemName: "keyboard").frame(width: 44, height: 44).contentShape(Rectangle())
-            }
-            .accessibilityLabel("方向键和 Tab")
-            .disabled(!terminal.canSend)
-            TextField("给 Claude 输入指令…", text: $input)
-                .focused($composing)
-                .font(.system(.body, design: .monospaced))
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
-                .onSubmit(submit)
-                .disabled(!terminal.canSend)
-                .accessibilityIdentifier("claude-terminal-input")
-            Button(action: submit) {
-                Image(systemName: "return").font(.body.weight(.semibold))
-                    .frame(width: 44, height: 44).foregroundStyle(surface)
-                    .background(accent, in: RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(.plain)
-            .disabled(!terminal.canSend || input.utf8.count >= 16 * 1024)
-            .opacity(terminal.canSend ? 1 : 0.45)
-            .accessibilityLabel(input.isEmpty ? "回车确认" : "发送指令")
-        }
-        .foregroundStyle(accent)
-        .padding(.horizontal, 6).padding(.vertical, 4)
-        .background(chrome)
-        .overlay(alignment: .top) { Divider() }
-    }
-
-    private func key(_ title: String, _ shortcut: TerminalKeyboard.Key, label: String) -> some View {
-        Button { keyboard.press(shortcut, transport: terminal) } label: {
-            Text(title).font(.system(.caption, design: .monospaced))
-                .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).disabled(!terminal.canSend).accessibilityLabel(label)
     }
 
     private var connectionLabel: String {
@@ -200,22 +160,52 @@ struct RemoteTerminalView: View {
             }
         }
     }
-
-    private func submit() {
-        guard terminal.canSend, input.utf8.count < 16 * 1024 else { return }
-        keyboard.submit(input)
-        input = ""
-    }
 }
 
 @MainActor
 private final class TerminalKeyboard {
-    enum Key { case escape, interrupt, up, down, left, right, tab, backspace }
+    enum Key { case escape, interrupt, up, down, left, right, tab }
     weak var view: TerminalDisplay?
 
-    func submit(_ text: String) {
-        if !text.isEmpty { view?.insertText(text) }
-        view?.insertText("\n")
+    func toggle() {
+        guard let view else { return }
+        if view.isFirstResponder { view.resignFirstResponder() }
+        else { view.becomeFirstResponder() }
+    }
+
+    func hide() {
+        view?.resignFirstResponder()
+    }
+
+    func accessory(transport: RemoteTerminal) -> UIView {
+        let bar = UIInputView(frame: CGRect(x: 0, y: 0, width: 0, height: 44), inputViewStyle: .keyboard)
+        bar.autoresizingMask = [.flexibleWidth]
+        let row = UIStackView()
+        row.distribution = .fillEqually
+        let keys: [(String, String, Key)] = [
+            ("Esc", "Esc 取消", .escape), ("^C", "Ctrl+C 中断", .interrupt), ("Tab", "Tab", .tab),
+            ("←", "向左", .left), ("↑", "向上", .up), ("↓", "向下", .down), ("→", "向右", .right),
+        ]
+        for (title, label, key) in keys {
+            let button = UIButton(type: .system)
+            button.setTitle(title, for: .normal)
+            button.titleLabel?.font = .monospacedSystemFont(ofSize: 13, weight: .medium)
+            button.accessibilityLabel = label
+            button.addAction(UIAction { [weak self, weak transport] _ in
+                guard let transport else { return }
+                self?.press(key, transport: transport)
+            }, for: .touchUpInside)
+            row.addArrangedSubview(button)
+        }
+        bar.addSubview(row)
+        row.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            row.leadingAnchor.constraint(equalTo: bar.safeAreaLayoutGuide.leadingAnchor),
+            row.trailingAnchor.constraint(equalTo: bar.safeAreaLayoutGuide.trailingAnchor),
+            row.topAnchor.constraint(equalTo: bar.topAnchor),
+            row.bottomAnchor.constraint(equalTo: bar.bottomAnchor),
+        ])
+        return bar
     }
 
     func press(_ key: Key, transport: RemoteTerminal) {
@@ -226,7 +216,6 @@ private final class TerminalKeyboard {
         case .interrupt:
             view.controlModifier = true
             view.insertText("c")
-        case .backspace: view.deleteBackward()
         case .tab:
             transport.send(Data((flags.contains(.reportAllKeys) ? "\u{1b}[9u" : "\t").utf8))
         case .escape:
@@ -246,8 +235,9 @@ private final class TerminalKeyboard {
     }
 }
 
-private final class TerminalDisplay: TerminalView {
-    override var canBecomeFirstResponder: Bool { false }
+final class TerminalDisplay: TerminalView {
+    var acceptsInput = false
+    override var canBecomeFirstResponder: Bool { acceptsInput && super.canBecomeFirstResponder }
 }
 
 private struct TerminalScreen: UIViewRepresentable {
@@ -259,7 +249,8 @@ private struct TerminalScreen: UIViewRepresentable {
     func makeUIView(context: Context) -> TerminalDisplay {
         let view = TerminalDisplay(frame: .zero, font: .monospacedSystemFont(ofSize: 13, weight: .regular))
         view.terminalDelegate = context.coordinator
-        view.inputAccessoryView = nil
+        view.inputAccessoryView = keyboard.accessory(transport: terminal)
+        view.keyboardAppearance = .dark
         keyboard.view = view
         view.nativeBackgroundColor = UIColor(red: 20 / 255, green: 26 / 255, blue: 22 / 255, alpha: 1)
         view.nativeForegroundColor = UIColor(red: 237 / 255, green: 242 / 255, blue: 233 / 255, alpha: 1)
@@ -268,7 +259,12 @@ private struct TerminalScreen: UIViewRepresentable {
         return view
     }
 
-    func updateUIView(_ uiView: TerminalDisplay, context: Context) {}
+    func updateUIView(_ uiView: TerminalDisplay, context: Context) {
+        if uiView.acceptsInput != terminal.canSend {
+            uiView.acceptsInput = terminal.canSend
+            if !terminal.canSend && uiView.isFirstResponder { uiView.resignFirstResponder() }
+        }
+    }
 
     final class Coordinator: TerminalViewDelegate {
         let terminal: RemoteTerminal

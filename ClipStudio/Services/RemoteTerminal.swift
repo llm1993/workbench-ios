@@ -255,7 +255,11 @@ final class RemoteTerminal: ObservableObject {
     }
 
     func send(_ data: Data) {
-        guard canSend, !data.isEmpty, data.count <= 16 * 1024 else { return }
+        guard canSend, !data.isEmpty else { return }
+        guard data.count <= 16 * 1024 else {
+            message = "单次粘贴超过 16 KB，请分段粘贴。"
+            return
+        }
         enqueue(.data(data))
     }
 
